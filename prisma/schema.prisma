@@ -1,0 +1,89 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String       @unique @db.VarChar(254)
+  password  String       @db.VarChar(255)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  profile   UserProfile?
+
+  @@map("user")
+}
+
+model UserProfile {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(150)
+  description String?  @db.VarChar(3000)
+  birthDate   DateTime @map("birth_date") @db.Date
+  userId      String   @unique @map("user_id") @db.Uuid
+  active      Boolean  @default(true)
+  image       String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  followers   Follow[] @relation("followers")
+  following   Follow[] @relation("following")
+  tags        Tag[]
+  posts       Post[]
+
+  @@map("user_profile")
+}
+
+model Follow {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  followerId  String      @map("follower_id") @db.Uuid
+  followingId String      @map("following_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  follower    UserProfile @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   UserProfile @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follow")
+}
+
+model Post {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String      @db.VarChar(200)
+  content       String      @db.VarChar(10000)
+  published     Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userProfileId String      @map("user_profile_id") @db.Uuid
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  tags          Tag[]
+  comments      Comment[]
+
+  @@map("post")
+}
+
+model Comment {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String    @db.VarChar(3000)
+  replyToId String?   @map("reply_to") @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  replyTo   Comment?  @relation("commentReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("commentReplies")
+
+  @@map("comment")
+}
+
+model Tag {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String        @unique @db.VarChar(30)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  posts        Post[]
+  userProfiles UserProfile[]
+
+  @@map("tag")
+}
