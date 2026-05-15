@@ -8,7 +8,7 @@ export class Argon2Service {
             type: argon2.argon2id,
             memoryCost: 2 ** 16,
             timeCost: 3,
-            parallelism: 1,
+            parallelism: 2,
         });
     }
 

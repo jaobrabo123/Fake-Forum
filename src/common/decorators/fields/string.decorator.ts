@@ -15,8 +15,18 @@ export function StringField(config?: StringFieldConfig) {
     ];
 
     if (config) {
-        if (config.max) decorators.push(MaxLength(config.max));
-        if (config.min) decorators.push(MinLength(config.min));
+        if (config.max)
+            decorators.push(
+                MaxLength(config.max, {
+                    message: `Campo deve ter no máximo ${config.max} caracteres.`,
+                }),
+            );
+        if (config.min)
+            decorators.push(
+                MinLength(config.min, {
+                    message: `Campo deve ter no mínimo ${config.min} caracteres.`,
+                }),
+            );
         if (config.apiProperty)
             decorators.push(ApiProperty(config.apiPropertyOptions));
     }

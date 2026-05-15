@@ -3,10 +3,13 @@ import {
     VSRepositoryOf,
     setupVSRepo,
 } from "../../../VSRepository/VSRepository";
-import { User } from "../../generated/prisma/client";
 import { PrismaService } from "../../database/prisma.service";
+import { UserGetPayload } from "../../generated/prisma/models";
 
-const userVSRepo = setupVSRepo<User, "User">()({
+const userVSRepo = setupVSRepo<
+    UserGetPayload<{ include: { profile: true } }>,
+    "User"
+>()({
     tableName: "user",
     pkName: "id",
     selectModels: {
@@ -22,16 +25,24 @@ const userVSRepo = setupVSRepo<User, "User">()({
             password: true,
         },
     },
+    defaultSelectModel: "public",
     requiredWhere: {
         deletedAt: null,
     },
-    defaultSelectModel: "public",
+    relations: {
+        profile: {
+            mode: "oto",
+            pk: "id",
+            restriction: "add",
+        },
+    },
     methods: {
         findAuthByEmail: {
             map: true,
             proxyTo: "findUniqueByEmail",
             selectModel: "auth",
         },
+        existsByEmail: { map: true },
     },
 });
 

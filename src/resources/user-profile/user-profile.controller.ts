@@ -3,43 +3,52 @@ import {
     Get,
     Post,
     Body,
-    Patch,
     Param,
     Delete,
+    UseGuards,
+    Put,
 } from "@nestjs/common";
 import { UserProfileService } from "./user-profile.service";
 import { CreateUserProfileDto } from "./dto/create-user-profile.dto";
-import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
+import { AuthGuard } from "../../auth/auth.guard";
+import { CurrentUser } from "../../common/decorators/request/current-user.decorator";
+import type { AccessTokenPayload } from "../../auth/entities/token-payload.entity";
 
-@Controller("user-profile")
+@Controller("userprofile")
 export class UserProfileController {
     constructor(private readonly userProfileService: UserProfileService) {}
 
     @Post()
-    create(@Body() createUserProfileDto: CreateUserProfileDto) {
-        return this.userProfileService.create(createUserProfileDto);
+    @UseGuards(AuthGuard)
+    async create(
+        @Body() createUserProfileDto: CreateUserProfileDto,
+        @CurrentUser() user: AccessTokenPayload,
+    ) {
+        return await this.userProfileService.create(createUserProfileDto, user);
     }
 
     @Get()
-    findAll() {
-        return this.userProfileService.findAll();
+    async findAll() {
+        return await this.userProfileService.findAll();
     }
 
     @Get(":id")
-    findOne(@Param("id") id: string) {
-        return this.userProfileService.findOne(+id);
+    async findOne(@Param("id") id: string) {
+        return await this.userProfileService.findOne(id);
     }
 
-    @Patch(":id")
-    update(
-        @Param("id") id: string,
-        @Body() updateUserProfileDto: UpdateUserProfileDto,
+    @Put()
+    @UseGuards(AuthGuard)
+    async update(
+        @Body() dto: CreateUserProfileDto,
+        @CurrentUser() user: AccessTokenPayload,
     ) {
-        return this.userProfileService.update(+id, updateUserProfileDto);
+        return await this.userProfileService.update(dto, user);
     }
 
-    @Delete(":id")
-    remove(@Param("id") id: string) {
-        return this.userProfileService.remove(+id);
+    @Delete()
+    @UseGuards(AuthGuard)
+    async remove(@CurrentUser() user: AccessTokenPayload) {
+        await this.userProfileService.remove(user);
     }
 }

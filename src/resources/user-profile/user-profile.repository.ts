@@ -25,7 +25,12 @@ const userProfileVSRepo = setupVSRepo<UserProfile, "UserProfile">()({
         active: true,
     },
     defaultSelectModel: "public",
-    methods: {},
+    methods: {
+        existsByUserId: { map: true, whereType: "overwrite" },
+        findMany: { map: true },
+        findByUserId: { map: true, fbMode: "one", whereType: "overwrite" },
+        deleteByUserId: { map: true },
+    },
 });
 
 export type UserProfileRepository = VSRepositoryOf<typeof userProfileVSRepo>;
@@ -36,6 +41,8 @@ export const UserProfileRepositoryProvider: Provider = {
     provide: USER_PROFILE_REPOSITORY,
     inject: [PrismaService],
     useFactory: (prisma: PrismaService) => {
-        return userProfileVSRepo.build(prisma);
+        return userProfileVSRepo.build(prisma, {
+            baseMethods: { save: { ignoreRequiredWhere: true } },
+        });
     },
 };

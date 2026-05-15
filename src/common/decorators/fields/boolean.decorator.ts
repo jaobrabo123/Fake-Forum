@@ -1,11 +1,11 @@
 import { applyDecorators } from "@nestjs/common";
-import { IsUrl } from "class-validator";
+import { IsBoolean } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 import { ApiProperty } from "@nestjs/swagger";
 
-export function UrlField(config?: FieldConfig) {
+export function BooleanField(config?: FieldConfig) {
     const decorators = [
-        IsUrl({}, { message: "Campo deve ser uma URL válida." }),
+        IsBoolean({ message: "Campo deve ser um boolean válido." }),
     ];
 
     if (config) {

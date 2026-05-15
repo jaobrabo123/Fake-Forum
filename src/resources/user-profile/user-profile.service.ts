@@ -1,26 +1,59 @@
-import { Injectable } from "@nestjs/common";
+import {
+    BadRequestException,
+    Inject,
+    Injectable,
+    NotFoundException,
+} from "@nestjs/common";
 import { CreateUserProfileDto } from "./dto/create-user-profile.dto";
-import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
+import { AccessTokenPayload } from "../../auth/entities/token-payload.entity";
+import {
+    USER_PROFILE_REPOSITORY,
+    type UserProfileRepository,
+} from "./user-profile.repository";
 
 @Injectable()
 export class UserProfileService {
-    create(createUserProfileDto: CreateUserProfileDto) {
-        return "This action adds a new userProfile";
+    constructor(
+        @Inject(USER_PROFILE_REPOSITORY)
+        private readonly userProfileRepository: UserProfileRepository,
+    ) {}
+
+    async create(userProfile: CreateUserProfileDto, user: AccessTokenPayload) {
+        const hasProfile = await this.userProfileRepository.existsByUserId(
+            user.id,
+        );
+        if (hasProfile)
+            throw new BadRequestException("Você já possui um perfil");
+
+        return await this.userProfileRepository.save({
+            ...userProfile,
+            userId: user.id,
+        });
     }
 
-    findAll() {
-        return `This action returns all userProfile`;
+    async findAll() {
+        return await this.userProfileRepository.findMany();
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} userProfile`;
+    async findOne(id: string) {
+        const profile = await this.userProfileRepository.get(id);
+        if (!profile) throw new NotFoundException("Perfil não encontrado");
+        return profile;
     }
 
-    update(id: number, updateUserProfileDto: UpdateUserProfileDto) {
-        return `This action updates a #${id} userProfile`;
+    async update(dto: CreateUserProfileDto, user: AccessTokenPayload) {
+        const profile = await this.userProfileRepository.findByUserId(user.id);
+        if (!profile) throw new NotFoundException("Perfil não encontrado");
+        return await this.userProfileRepository.save({
+            ...dto,
+            id: profile.id,
+            userId: user.id,
+        });
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} userProfile`;
+    async remove(user: AccessTokenPayload) {
+        const profile = await this.userProfileRepository.findByUserId(user.id);
+        if (!profile) throw new NotFoundException("Perfil não encontrado");
+        await this.userProfileRepository.deleteByUserId(user.id);
     }
 }

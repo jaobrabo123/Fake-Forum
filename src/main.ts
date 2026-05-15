@@ -4,6 +4,7 @@ import { UnprocessableEntityException, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule } from "@nestjs/swagger/dist/swagger-module";
 import { DocumentBuilder } from "@nestjs/swagger/dist/document-builder";
 import cookieParser from "cookie-parser";
+import { PrismaClientExceptionFilter } from "./common/filters/prisma-client-exception.filter";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -19,6 +20,8 @@ async function bootstrap() {
                 new UnprocessableEntityException(errors),
         }),
     );
+
+    app.useGlobalFilters(new PrismaClientExceptionFilter());
 
     const config = new DocumentBuilder()
         .setTitle("Fake Forum API")
