@@ -18,6 +18,8 @@ export class UserService {
             throw new ConflictException("Já existe um usuário com esse email.");
 
         user.password = await this.argon2Service.hash(user.password);
-        return await this.userRepository.save(user);
+        return await this.userRepository.save(user, {
+            selectModel: "withProfile",
+        });
     }
 }

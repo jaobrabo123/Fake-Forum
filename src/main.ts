@@ -5,6 +5,8 @@ import { SwaggerModule } from "@nestjs/swagger/dist/swagger-module";
 import { DocumentBuilder } from "@nestjs/swagger/dist/document-builder";
 import cookieParser from "cookie-parser";
 import { PrismaClientExceptionFilter } from "./common/filters/prisma-client-exception.filter";
+import { UnknownExceptionFilter } from "./common/filters/unknown-exception.filter";
+import { SuccessResponseInterceptor } from "./common/interceptors/success-response.interceptor";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -21,7 +23,12 @@ async function bootstrap() {
         }),
     );
 
-    app.useGlobalFilters(new PrismaClientExceptionFilter());
+    app.useGlobalFilters(
+        new UnknownExceptionFilter(),
+        new PrismaClientExceptionFilter(),
+    );
+
+    app.useGlobalInterceptors(new SuccessResponseInterceptor());
 
     const config = new DocumentBuilder()
         .setTitle("Fake Forum API")

@@ -1,9 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { EmailField } from "../../../common/decorators/fields/email.decorator";
-import { PasswordField } from "../../../common/decorators/fields/password.decorator";
 import { CreateUserProfileDto } from "../../user-profile/dto/create-user-profile.dto";
 import { IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
+import { EmailField, PasswordField } from "../../../common/decorators/fields";
 
 export class CreateUserDTO {
     @EmailField({ apiProperty: true })

@@ -15,18 +15,17 @@ export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post("login")
-    @HttpCode(HttpStatus.OK)
+    @HttpCode(HttpStatus.NO_CONTENT)
     async login(
         @Body() loginDTO: LoginDTO,
         @Res({ passthrough: true }) response: Response,
     ) {
-        const { content, cookies } = await this.authService.login(loginDTO);
+        const { cookies } = await this.authService.login(loginDTO);
         response.cookie("accessToken", cookies.accessToken, {
             httpOnly: true,
             secure: true,
             sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-        return content;
     }
 }

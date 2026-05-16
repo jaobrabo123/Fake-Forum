@@ -6,6 +6,7 @@ import { AuthController } from "./auth/auth.controller";
 import { AuthService } from "./auth/auth.service";
 import { AuthModule } from "./auth/auth.module";
 import { UserProfileModule } from "./resources/user-profile/user-profile.module";
+import { FollowModule } from './resources/follow/follow.module';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { UserProfileModule } from "./resources/user-profile/user-profile.module"
         UserModule,
         AuthModule,
         UserProfileModule,
+        FollowModule,
     ],
     controllers: [AuthController],
     providers: [AuthService],

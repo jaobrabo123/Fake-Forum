@@ -1,8 +1,9 @@
 import { IsOptional } from "class-validator";
-import { DateField } from "../../../common/decorators/fields/date.decorator";
-import { StringField } from "../../../common/decorators/fields/string.decorator";
-import { UrlField } from "../../../common/decorators/fields/url.decorator";
-import { BooleanField } from "../../../common/decorators/fields/boolean.decorator";
+import {
+    DateField,
+    StringField,
+    UrlField,
+} from "../../../common/decorators/fields";
 
 export class CreateUserProfileDto {
     @StringField({ max: 150, apiProperty: true })
@@ -18,8 +19,4 @@ export class CreateUserProfileDto {
     @UrlField({ apiProperty: true })
     @IsOptional()
     image?: string | null;
-
-    @BooleanField({ apiProperty: true })
-    @IsOptional()
-    active?: boolean;
 }

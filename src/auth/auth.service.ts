@@ -36,7 +36,6 @@ export class AuthService {
         );
 
         return {
-            content: { id: user.id, email: user.email },
             cookies: { accessToken },
         };
     }

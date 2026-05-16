@@ -1,8 +1,5 @@
 import { Provider } from "@nestjs/common";
-import {
-    VSRepositoryOf,
-    setupVSRepo,
-} from "../../../VSRepository/VSRepository";
+import { RepositoryOf, setupVSRepo } from "../../../VSRepository/VSRepository";
 import { PrismaService } from "../../database/prisma.service";
 import { UserGetPayload } from "../../generated/prisma/models";
 
@@ -24,6 +21,24 @@ const userVSRepo = setupVSRepo<
             email: true,
             password: true,
         },
+        withProfile: {
+            id: true,
+            email: true,
+            createdAt: true,
+            updatedAt: true,
+            profile: {
+                select: {
+                    id: true,
+                    name: true,
+                    birthDate: true,
+                    description: true,
+                    active: true,
+                    image: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            },
+        },
     },
     defaultSelectModel: "public",
     requiredWhere: {
@@ -42,11 +57,12 @@ const userVSRepo = setupVSRepo<
             proxyTo: "findUniqueByEmail",
             selectModel: "auth",
         },
+
         existsByEmail: { map: true },
     },
 });
 
-export type UserRepository = VSRepositoryOf<typeof userVSRepo>;
+export type UserRepository = RepositoryOf<typeof userVSRepo>;
 
 export const USER_REPOSITORY = Symbol("USER_REPOSITORY");
 
