@@ -5,3 +5,4 @@ export * from "./password.decorator";
 export * from "./string.decorator";
 export * from "./url.decorator";
 export * from "./uuid.decorator";
+export * from "./int.decorator";

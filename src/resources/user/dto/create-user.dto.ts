@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { CreateUserProfileDto } from "../../user-profile/dto/create-user-profile.dto";
+import { CreateUserProfileDTO } from "../../user-profile/dto/create-user-profile.dto";
 import { IsOptional, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { EmailField, PasswordField } from "../../../common/decorators/fields";
@@ -14,6 +14,6 @@ export class CreateUserDTO {
     @ApiProperty()
     @IsOptional()
     @ValidateNested()
-    @Type(() => CreateUserProfileDto)
-    profile?: CreateUserProfileDto;
+    @Type(() => CreateUserProfileDTO)
+    profile?: CreateUserProfileDTO;
 }

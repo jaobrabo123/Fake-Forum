@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { DatabaseModule } from "./database/database.module";
 import { UserModule } from "./resources/user/user.module";
-import { AuthController } from "./auth/auth.controller";
-import { AuthService } from "./auth/auth.service";
 import { AuthModule } from "./auth/auth.module";
 import { UserProfileModule } from "./resources/user-profile/user-profile.module";
-import { FollowModule } from './resources/follow/follow.module';
+import { FollowModule } from "./resources/follow/follow.module";
+import { PostModule } from "./resources/post/post.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
     imports: [
@@ -16,8 +16,8 @@ import { FollowModule } from './resources/follow/follow.module';
         AuthModule,
         UserProfileModule,
         FollowModule,
+        PostModule,
+        RedisModule,
     ],
-    controllers: [AuthController],
-    providers: [AuthService],
 })
 export class AppModule {}

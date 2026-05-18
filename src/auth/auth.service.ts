@@ -7,6 +7,12 @@ import { LoginDTO } from "./dto/login.dto";
 import { Argon2Service } from "./argon2.service";
 import { JwtService } from "@nestjs/jwt";
 import { AccessTokenPayload } from "./entities/token-payload.entity";
+import { ConfigService } from "@nestjs/config";
+import {
+    compareRawWithHmacSHA256Hash,
+    createHmacSHA256Hash,
+} from "../common/utils/crypto.utils";
+import { SessionService } from "./session.service";
 
 @Injectable()
 export class AuthService {
@@ -15,7 +21,42 @@ export class AuthService {
         private readonly userRepository: UserRepository,
         private readonly argon2Service: Argon2Service,
         private readonly jwtService: JwtService,
+        private readonly configService: ConfigService,
+        private readonly sessionService: SessionService,
     ) {}
+
+    private async generateTokens(userId: string, email: string) {
+        const sessionId = crypto.randomUUID();
+
+        const [accessToken, refreshToken] = await Promise.all([
+            this.jwtService.signAsync<AccessTokenPayload>(
+                { id: userId, email: email, sessionId },
+                {
+                    secret: this.configService.getOrThrow("JWT_ACCESS_SECRET"),
+                    expiresIn: "15m",
+                },
+            ),
+            this.jwtService.signAsync<AccessTokenPayload>(
+                { id: userId, email, sessionId },
+                {
+                    secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
+                    expiresIn: "7d",
+                },
+            ),
+        ]);
+
+        const refreshTokenHash = createHmacSHA256Hash(refreshToken);
+
+        await this.sessionService.create({
+            id: sessionId,
+            refreshTokenHash,
+            userId,
+        });
+
+        return {
+            cookies: { accessToken, refreshToken },
+        };
+    }
 
     async login(dto: LoginDTO) {
         const user = await this.userRepository.findAuthByEmail(dto.email);
@@ -28,15 +69,44 @@ export class AuthService {
         if (!validPassword)
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        const accessToken = await this.jwtService.signAsync<AccessTokenPayload>(
-            {
-                id: user.id,
-                email: user.email,
-            },
-        );
+        return this.generateTokens(user.id, user.email);
+    }
 
-        return {
-            cookies: { accessToken },
-        };
+    async refreshTokens(oldRefreshToken: string | undefined) {
+        if (!oldRefreshToken) {
+            throw new UnauthorizedException("Refresh token ausente.");
+        }
+
+        try {
+            const user = await this.jwtService.verifyAsync<AccessTokenPayload>(
+                oldRefreshToken,
+                {
+                    secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
+                },
+            );
+
+            const session = await this.sessionService.find(user.sessionId);
+            if (!session)
+                throw new UnauthorizedException("Sessão não encontrada.");
+
+            const isTokenValid = compareRawWithHmacSHA256Hash(
+                oldRefreshToken,
+                session.refreshTokenHash,
+            );
+            if (!isTokenValid)
+                throw new UnauthorizedException("Refresh token inválido.");
+
+            await this.sessionService.remove(session.id);
+
+            return this.generateTokens(user.id, user.email);
+        } catch {
+            throw new UnauthorizedException(
+                "Refresh token inválido ou expirado.",
+            );
+        }
+    }
+
+    async logout(sessionId: string) {
+        await this.sessionService.remove(sessionId);
     }
 }

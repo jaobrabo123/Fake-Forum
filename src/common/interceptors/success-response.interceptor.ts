@@ -1,31 +1,8 @@
 import { CallHandler, ExecutionContext, NestInterceptor } from "@nestjs/common";
 import { Response } from "express";
 import { map, Observable } from "rxjs";
-
-export interface SuccessResponseBody<T> {
-    success: boolean;
-    statusCode: number;
-    message?: string;
-    content?: T;
-    meta?: {
-        total?: number;
-        page?: number;
-        perPage?: number;
-        totalPages?: number;
-        cached?: boolean;
-        hasNextPage?: boolean;
-    };
-}
-
-export interface Meta {
-    total?: number;
-    page?: number;
-    perPage?: number;
-    totalPages?: number;
-    cached?: boolean;
-    hasNextPage?: boolean;
-}
-
+import { Meta } from "./entities/meta.entity";
+import { SuccessResponseBody } from "./entities/success-response-body.entity";
 export interface SuccessResponseData {
     message?: string;
     content?: object | object[];
@@ -49,8 +26,10 @@ export class SuccessResponseInterceptor<T> implements NestInterceptor<
             map((data: SuccessResponseData | undefined) => ({
                 success: true,
                 statusCode,
+                timestamp: new Date(),
                 message: data?.message,
                 content: data?.content ?? data,
+                meta: data?.meta,
             })),
         );
     }

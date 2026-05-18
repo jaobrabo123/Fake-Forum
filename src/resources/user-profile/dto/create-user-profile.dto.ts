@@ -5,7 +5,7 @@ import {
     UrlField,
 } from "../../../common/decorators/fields";
 
-export class CreateUserProfileDto {
+export class CreateUserProfileDTO {
     @StringField({ max: 150, apiProperty: true })
     name!: string;
 

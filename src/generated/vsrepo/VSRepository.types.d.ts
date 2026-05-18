@@ -1,21 +1,45 @@
-import { Prisma, PrismaClient } from '../src/generated/prisma/client';
+import { Prisma, PrismaClient } from '../prisma/client';
 
+/**
+ * Instância completa do Prisma Client usada para construir repositories.
+ */
 export type DbClient = PrismaClient;
+
+/**
+ * Cliente transacional do Prisma retornado por `prisma.$transaction`.
+ */
 export type DbTransaction = Prisma.TransactionClient;
+
+/**
+ * Aceita tanto o cliente principal do Prisma quanto um cliente de transação.
+ */
 export type ClientOrTransaction = DbClient | DbTransaction;
 
-export * from './VSRepoError';
+export * from './VSRepoError.js';
 
 type OrderPattern = {
     [key: string]: 'asc' | 'desc' | { _count: 'asc' | 'desc' } | OrderPattern;
 };
 
+/**
+ * Opções de paginação aceitas pelos métodos com sufixo `Paginated`.
+ *
+ * @template TCursor Tipo do cursor usado pelo modelo Prisma.
+ */
 export type PaginationOptions<TCursor = unknown> = {
+    /** Quantidade de registros a ignorar. */
     skip?: number;
+    /** Quantidade máxima de registros retornados. */
     take?: number;
+    /** Cursor tipado para paginação baseada em posição. */
     cursor?: TCursor;
 };
 
+/**
+ * Ordenação aceita pelos métodos do repository.
+ *
+ * Pode ser uma única ordenação ou uma lista de ordenações encadeadas.
+ */
 export type OrderOptions = OrderPattern | OrderPattern[];
 
 type ValidMethodPatterns =
@@ -27,14 +51,18 @@ type ValidMethodPatterns =
     | `deleteBy${string}` | `countBy${string}` | `count${string}`
     | `findWhere${string}` | `findListWhere${string}`;
 
-// Modificadores consolidados em Unions para processamento rápido
-type Modifiers =
-    | 'NotStartsWith' | 'StartsWith' | 'NotEndsWith' | 'EndsWith'
-    | 'NotContains' | 'Contains' | 'LessThanEqual' | 'LessThan'
-    | 'GreaterThanEqual' | 'GreaterThan' | 'NotIn' | 'In' | 'Not'
-    | 'Insensitive' | 'NotInsensitive' | 'InInsensitive' | 'ContainsInsensitive';
+type StringModifiers = 
+    | 'NotStartsWith' | 'StartsWith' | 'NotEndsWith' | 'EndsWith' 
+    | 'NotContains' | 'Contains' | 'NotIn' | 'In' | 'Not';
 
-type StripModifier<S extends string> = S extends `${infer Base}${Modifiers}` ? Base : S;
+type NumberModifiers = 
+    | 'LessThanEqual' | 'LessThan' | 'GreaterThanEqual' | 'GreaterThan';
+
+type StripModifier<S extends string> =
+  S extends `${infer Base}${`${StringModifiers}Insensitive`}` ? Base :
+  S extends `${infer Base}${StringModifiers | NumberModifiers}` ? Base :
+  S extends `${infer Base}Insensitive` ? Base :
+  S;
 
 type ExtractFieldName<S extends string> = Uncapitalize<StripModifier<S>>;
 
@@ -61,7 +89,6 @@ type GetFieldType<T, S extends string, I> = ExtractFieldName<S> extends infer Fi
             : unknown
     : unknown;
 
-// Otimização: Validação O(1) com Union Strings
 type NoArgModifiers = 'IsNull' | 'IsNotNull' | 'IsTrue' | 'IsFalse' | 'None' | 'Some' | 'Every' | 'Without';
 
 type IsNoArgModifier<S extends string> = 
@@ -69,13 +96,20 @@ type IsNoArgModifier<S extends string> =
     S extends `${string}${NoArgModifiers | 'With'}` ? true : 
     false;
 
+type IsOptional<S extends string> = S extends `${string}Optional` ? true : false;
+type StripOptional<S extends string> = S extends `${infer Base}Optional` ? Base : S;
+
 type MapToContractTypes<T, Arr extends string[], I> = 
     Arr extends [infer First extends string, ...infer Rest extends string[]]
         ? First extends '' 
             ? MapToContractTypes<T, Rest, I>
-            : IsNoArgModifier<First> extends true
-                ? MapToContractTypes<T, Rest, I>
-                : [GetFieldType<T, First, I>, ...MapToContractTypes<T, Rest, I>]
+            : StripOptional<First> extends infer CleanFirst extends string
+                ? IsNoArgModifier<CleanFirst> extends true
+                    ? MapToContractTypes<T, Rest, I>
+                    : IsOptional<First> extends true
+                        ? [GetFieldType<T, CleanFirst, I> | undefined, ...MapToContractTypes<T, Rest, I>]
+                        : [GetFieldType<T, CleanFirst, I>, ...MapToContractTypes<T, Rest, I>]
+                : never
         : [];
 
 type HasMultipleANDs<S extends string> = S extends `${string}AND${string}AND${string}` ? true : false;
@@ -121,19 +155,19 @@ type ExtraArgs<M extends string, R extends string, I> = [
       : [])
 ];
 
-// 🔥 OTIMIZAÇÃO EXTREMA: Removido o longo ApplyPrismaSelect. 
-// A resolução do modelo é feita instantaneamente pela Engine nativa do Prisma Client usando `Prisma.Result`.
 type PrismaDelegate<M extends Prisma.ModelName> = Uncapitalize<M> extends keyof DbClient ? DbClient[Uncapitalize<M>] : never;
 
 type FullModelType<M extends Prisma.ModelName> = 
   Prisma.Result<PrismaDelegate<M>, {}, 'findMany'> extends Array<infer U> ? U : never;
 
 type SelectedModel<M extends Prisma.ModelName, S, SelectModels> = 
-    [S] extends [never] 
-        ? FullModelType<M> 
-        : [S] extends [keyof SelectModels] 
-            ? (Prisma.Result<PrismaDelegate<M>, { select: SelectModels[S] }, 'findMany'> extends Array<infer U> ? U : never)
-            : FullModelType<M>;
+    [S] extends [false] 
+        ? FullModelType<M>
+        : [S] extends [never] 
+            ? FullModelType<M> 
+            : [S] extends [keyof SelectModels] 
+                ? (Prisma.Result<PrismaDelegate<M>, { select: SelectModels[S] }, 'findMany'> extends Array<infer U> ? U : never)
+                : FullModelType<M>;
 
 type CleanFields<R extends string> =
     R extends `${infer F}PaginatedAndOrdered` ? F :
@@ -142,13 +176,32 @@ type CleanFields<R extends string> =
     R extends `${infer F}Ordered` ? F :
     R extends `${infer F}SkipDuplicates` ? F : R;
 
-export type MethodOptions<S> = { selectModel?: S; db?: ClientOrTransaction };
-export type MethodOptionsModel<T> = MethodOptions<keyof T>;
+/**
+ * Opções adicionais aceitas pelos métodos do repository.
+ *
+ * @template S Chaves disponíveis em `selectModels`.
+ */
+export type MethodOptions<S> = {
+    /**
+     * Select model a ser aplicado na operação.
+     *
+     * Use `false` para retornar o payload completo do Prisma, sem select.
+     */
+    selectModel?: S | false;
+    /**
+     * Cliente Prisma ou transação que deve executar a operação.
+     */
+    db?: ClientOrTransaction;
+};
 
-type MethodFn<MethodName extends string, T, M extends Prisma.ModelName, R extends string, SelectModels, DefaultSelect extends keyof SelectModels, I> = 
-    <S extends keyof SelectModels = DefaultSelect>(...args: [...ExtractFields<T, CleanFields<R>, I>, ...ExtraArgs<MethodName, R, I>, options?: MethodOptions<S>]) => Promise<ResolveReturnType<MethodName, SelectedModel<M, S, SelectModels>>>;
+/**
+ * Versão de `MethodOptions` derivada de um mapa de select models.
+ */
+export type MethodOptionsModel<T> = MethodOptions<keyof T | false>;
 
-// Otimização: Achatamento da inferência de padrões
+type MethodFn<MethodName extends string, T, M extends Prisma.ModelName, R extends string, SelectModels, DefaultSelect extends keyof SelectModels | false, I> = 
+    <S extends keyof SelectModels | false = DefaultSelect>(...args: [...ExtractFields<T, CleanFields<R>, I>, ...ExtraArgs<MethodName, R, I>, options?: MethodOptions<S>]) => Promise<ResolveReturnType<MethodName, SelectedModel<M, S, SelectModels>>>;
+
 type GetMappedMethod<K extends string, MethodConf> = 
     K extends `findBy${string}` ? (MethodConf extends { fbMode: 'one' } ? 'findByOne' : 'findByList') :
     K extends `existsBy${string}` ? 'existsBy' :
@@ -157,13 +210,13 @@ type GetMappedMethod<K extends string, MethodConf> =
     K extends `findManyBy${string}` | `findMany${string}` ? 'findMany' :
     K extends `createManyAndReturn${string}` ? 'createManyAndReturn' :
     K extends `createMany${string}` ? 'createMany' :
-    K extends `create${string}` ? 'create' : // Precisa ficar depois dos createMany
+    K extends `create${string}` ? 'create' :
     K extends `updateManyAndReturnBy${string}` ? 'updateManyAndReturnBy' :
     K extends `updateManyBy${string}` ? 'updateManyBy' :
-    K extends `updateBy${string}` ? 'updateBy' : // Precisa ficar depois dos updateMany
+    K extends `updateBy${string}` ? 'updateBy' :
     K extends `upsertBy${string}` ? 'upsertBy' :
     K extends `deleteManyBy${string}` ? 'deleteManyBy' :
-    K extends `deleteBy${string}` ? 'deleteBy' : // Precisa ficar depois do deleteMany
+    K extends `deleteBy${string}` ? 'deleteBy' :
     K extends `countBy${string}` | `count${string}` ? 'count' :
     K extends `findListWhere${string}` ? 'findListWhere' :
     K extends `findWhere${string}` ? 'findWhere' :
@@ -173,11 +226,11 @@ type ExtractPatternBase<K extends string> =
     K extends `${string}By${infer R}` ? R :
     K extends `findFirst${infer R}` | `findMany${infer R}` | `createManyAndReturn${infer R}` | `createMany${infer R}` | `create${infer R}` | `count${infer R}` | `findWhere${infer R}` | `findListWhere${infer R}` ? R : '';
 
-type MethodFactory<T, M extends Prisma.ModelName, K extends string, SelectModels, DefaultSelect extends keyof SelectModels, I, MethodConf> = 
+type MethodFactory<T, M extends Prisma.ModelName, K extends string, SelectModels, DefaultSelect extends keyof SelectModels | false, I, MethodConf> = 
     MethodFn<GetMappedMethod<K, MethodConf>, T, M, ExtractPatternBase<K>, SelectModels, DefaultSelect, I>;
 
 type ResolveSelectModel<MethodConf, GlobalConf, SelectModels> = 
-    MethodConf extends { selectModel: infer S } ? (S extends keyof SelectModels ? S : never) : 
+    MethodConf extends { selectModel: infer S } ? (S extends false ? false : S extends keyof SelectModels ? S : never) : 
     GlobalConf extends { defaultSelectModel: infer D } ? (D extends keyof SelectModels ? D : never) : never;
 
 type ExtractPkName<T, Config> = Config extends { pkName: infer PK } ? (PK extends keyof T ? PK : never) : never;
@@ -193,62 +246,136 @@ type DynamicMethods<T, M extends Prisma.ModelName, Config, I> = Config extends {
       }
     : {};
 
+/**
+ * Agrupa os principais tipos de input do Prisma derivados de um modelo.
+ *
+ * @template M Nome do modelo Prisma.
+ */
 export type PrismaModelInputs<M extends Prisma.ModelName> = {
+    /** Tipo do argumento `select` usado em consultas do modelo. */
     select: Prisma.TypeMap['model'][M]['operations']['findMany']['args']['select'];
+    /** Tipo do `data` usado em `create`. */
     createInput: Prisma.TypeMap['model'][M]['operations']['create']['args']['data'];
+    /** Tipo do `data` usado em `createMany`. */
     createManyInput: Prisma.TypeMap['model'][M]['operations']['createMany']['args']['data'];
+    /** Tipo do `data` usado em `update`. */
     updateInput: Prisma.TypeMap['model'][M]['operations']['update']['args']['data'];
+    /** Tipo do `data` usado em `updateMany`. */
     updateManyInput: Prisma.TypeMap['model'][M]['operations']['updateMany']['args']['data'];
+    /** Tipo do `where` usado nas buscas do modelo. */
     whereInput: Prisma.TypeMap['model'][M]['operations']['findMany']['args']['where'];
+    /** Tipo do `orderBy` usado nas buscas do modelo. */
     orderByInput: Prisma.TypeMap['model'][M]['operations']['findMany']['args']['orderBy'];
+    /** Tipo do cursor usado nas buscas do modelo. */
     cursorInput: Prisma.TypeMap['model'][M]['operations']['findMany']['args']['cursor'];
+    /** Tipo do payload `create` usado em `upsert`. */
     upsertCreateInput: Prisma.TypeMap['model'][M]['operations']['upsert']['args']['create'];
+    /** Tipo do payload `update` usado em `upsert`. */
     upsertUpdateInput: Prisma.TypeMap['model'][M]['operations']['upsert']['args']['update'];
 };
 
+/**
+ * Tipo do objeto `select` de um modelo Prisma.
+ */
 export type SelectModel<M extends Prisma.ModelName> = PrismaModelInputs<M>['select'];
+
+/**
+ * Mapa de selects nomeados e reutilizáveis para um modelo Prisma.
+ */
 export type SelectModels<M extends Prisma.ModelName> = Record<string, SelectModel<M>>;
+
+/**
+ * Tipo do objeto `where` de um modelo Prisma.
+ */
 export type WhereModel<M extends Prisma.ModelName> = PrismaModelInputs<M>['whereInput'];
+
+/**
+ * Tipo do objeto `orderBy` de um modelo Prisma.
+ */
 export type OrdenationModel<M extends Prisma.ModelName> = PrismaModelInputs<M>['orderByInput'];
+
+/**
+ * Opções de paginação com cursor tipado para um modelo Prisma.
+ */
 export type PaginationModel<M extends Prisma.ModelName> = PaginationOptions<PrismaModelInputs<M>['cursorInput']>;
+
+/**
+ * Payload base usado para criar um registro no `save`/`upsert` do modelo.
+ */
 export type ModelUpsertInput<M extends Prisma.ModelName> = PrismaModelInputs<M>['upsertCreateInput'];
 
+/**
+ * Configuração de um método dinâmico definido em `methods`.
+ *
+ * @template M Nome do modelo Prisma.
+ * @template SelectModels Mapa de select models disponíveis no repository.
+ */
 export type MethodConfig<M extends Prisma.ModelName, SelectModels = any> = {
+    /** Define se o método será exposto no repository. */
     readonly map: boolean;
-    readonly selectModel?: keyof SelectModels;
+    /** Sobrescreve o `defaultSelectModel` apenas para este método. */
+    readonly selectModel?: keyof SelectModels | false;
+    /** Controla se o método combina ou sobrescreve o `requiredWhere`. */
     readonly whereType?: 'overwrite' | 'extending';
+    /** Redireciona a lógica para outro padrão de método válido. */
     readonly proxyTo?: ValidMethodPatterns;
+    /** Adiciona um `where` extra além do `requiredWhere`. */
     readonly pushWhere?: WhereModel<M>;
+    /** Define se `findBy` retorna um item (`one`) ou uma lista (`list`). */
     readonly fbMode?: 'one' | 'list';
+    /** Injeta uma ordenação fixa automaticamente na query. */
     readonly injectOrdenation?: OrdenationModel<M>;
+    /** Injeta uma paginação fixa automaticamente na query. */
     readonly injectPagination?: PaginationModel<M>;
 };
 
 type BaseMethodConfig<TSelectKeys extends PropertyKey = string> = {
+    /** Ativa ou desativa o método base no `build`. */
     active?: boolean;
+    /** Select model padrão usado pelo método base. */
     defaultSelect?: TSelectKeys;
+    /** Ignora o `requiredWhere` no `save`. */
     ignoreRequiredWhere?: boolean;
 };
 
+/**
+ * Configuração aplicada durante o `.build(prisma, config?)`.
+ *
+ * @template TSelectKeys Chaves válidas de `selectModels`.
+ */
 export type BuildConfig<TSelectKeys extends PropertyKey = string> = {
+    /** Congela o objeto final do repository. */
     freeze?: boolean;
+    /** Exibe logs internos de funcionamento no console. */
     showWorking?: boolean;
+    /** Personaliza o comportamento dos métodos base automáticos. */
     baseMethods?: {
+        /** Configuração do método `get`. */
         get?: BaseMethodConfig<TSelectKeys>;
+        /** Configuração do método `remove`. */
         remove?: BaseMethodConfig<TSelectKeys>;
+        /** Configuração do método `save`. */
         save?: BaseMethodConfig<TSelectKeys>;
     };
 };
 
-type ResolveMethodDefaultSelect<Config, C, Method extends 'get' | 'remove' | 'save'> =
-    C extends { baseMethods: Record<Method, { defaultSelect: infer D }> }
-        ? D extends keyof ExtractSelectModels<Config> ? D : ExtractDefaultSelect<Config>
-        : ExtractDefaultSelect<Config>;
+type ResolveMethodDefaultSelect<Config, C, Method extends 'get' | 'remove' | 'save', TSelects = ExtractSelectModels<Config>> =
+    C extends { baseMethods?: { [_ in Method]?: { defaultSelect?: infer D } } }
+        ? D extends keyof TSelects 
+            ? D 
+            : ExtractDefaultSelect<Config> extends keyof TSelects 
+                ? ExtractDefaultSelect<Config> 
+                : false
+        : ExtractDefaultSelect<Config> extends keyof TSelects 
+            ? ExtractDefaultSelect<Config> 
+            : false;
 
 type ResolveCurrentReturn<M extends Prisma.ModelName, Models, S, D> = 
-    [S] extends [never] 
-        ? ([D] extends [never] ? FullModelType<M> : SelectedModel<M, D, Models>)
-        : SelectedModel<M, S, Models>;
+    [S] extends [false] 
+        ? FullModelType<M> 
+        : [S] extends [never] 
+            ? ([D] extends [never] ? FullModelType<M> : SelectedModel<M, D, Models>)
+            : SelectedModel<M, S, Models>;
 
 type RefineSaveResult<R, O> = { [K in keyof R]: K extends keyof O ? (O[K] extends null ? R[K] : NonNullable<R[K]>) : R[K]; };
 
@@ -258,7 +385,7 @@ type InjectedGet<
     TDefault = ExtractDefaultSelect<Config>,
     TPk = ExtractPkName<T, Config>
 > = C extends { baseMethods: { get: { active: false } } } ? {} : {
-    get<S extends keyof TSelects = ResolveMethodDefaultSelect<Config, C, 'get'>>(
+    get<S extends keyof TSelects | false = ResolveMethodDefaultSelect<Config, C, 'get', TSelects>>(
         pk: T[TPk extends keyof T ? TPk : never], options?: MethodOptions<S>
     ): Promise<ResolveCurrentReturn<M, TSelects, S, TDefault> | null>;
 };
@@ -269,11 +396,14 @@ type InjectedRemove<
     TDefault = ExtractDefaultSelect<Config>,
     TPk = ExtractPkName<T, Config>
 > = C extends { baseMethods: { remove: { active: false } } } ? {} : {
-    remove<S extends keyof TSelects = ResolveMethodDefaultSelect<Config, C, 'remove'>>(
+    remove<S extends keyof TSelects | false = ResolveMethodDefaultSelect<Config, C, 'remove', TSelects>>(
         pk: T[TPk extends keyof T ? TPk : never], options?: MethodOptions<S>
     ): Promise<ResolveCurrentReturn<M, TSelects, S, TDefault>>;
 };
 
+/**
+ * Versão distributiva de `Omit`, preservando unions ao remover propriedades.
+ */
 export type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 type ExtractUnionProp<T, K extends PropertyKey> = T extends any ? (K extends keyof T ? T[K] : never) : never;
 
@@ -288,6 +418,12 @@ type RelationPayload<TField, TRelationConfig, M extends Prisma.ModelName, K exte
       ? ExtractNestedCreateInput<M, K> | (TRelationConfig extends { mode: 'oto'; restriction: 'set' } | { mode: 'mto'; nullAble: true } ? null : never)
       : never;
 
+/**
+ * Payload aceito pelo `save` quando o repository possui relações configuradas.
+ *
+ * Substitui os campos relacionais pelo formato compatível com os modos
+ * configurados em `relations`.
+ */
 export type UpsertWithRelations<T, M extends Prisma.ModelName, TRelations> = 
     DistributiveOmit<ModelUpsertInput<M>, keyof TRelations> & {
         [K in Extract<keyof TRelations, keyof T>]?: RelationPayload<T[K], TRelations[K], M, K>;
@@ -301,18 +437,21 @@ type InjectedSave<
 > = C extends { baseMethods: { save: { active: false } } } ? {} : {
     save<
         O extends UpsertWithRelations<T, M, TRelations>, 
-        S extends keyof TSelects = ResolveMethodDefaultSelect<Config, C, 'save'>
+        S extends keyof TSelects | false = ResolveMethodDefaultSelect<Config, C, 'save', TSelects>
     >(
         obj: O & UpsertWithRelations<T, M, TRelations>, 
         options?: MethodOptions<S>
     ): Promise<RefineSaveResult<ResolveCurrentReturn<M, TSelects, S, TDefault>, O>>;
 };
 
-type InjectedBaseMethods<T, M extends Prisma.ModelName, Config, C extends BuildConfig | undefined> = 
+type InjectedBaseMethods<T, M extends Prisma.ModelName, Config, C extends BuildConfig<any> | undefined> = 
     InjectedGet<T, M, Config, C> & 
     InjectedRemove<T, M, Config, C> & 
     InjectedSave<T, M, Config, C>;
 
+/**
+ * Infere automaticamente a configuração de relação possível a partir de um campo.
+ */
 export type ExtractRelationConfig<TField> = NonNullable<TField> extends infer NonNull
     ? NonNull extends Date | Buffer | Uint8Array ? never
     : NonNull extends any[] ? (NonNull[number] extends object ? { pk: keyof NonNull[number]; mode: 'otm' | 'mtm'; restriction: 'set' | 'add' } : never)
@@ -320,45 +459,95 @@ export type ExtractRelationConfig<TField> = NonNullable<TField> extends infer No
     : never
     : never;
 
+/**
+ * Mapa das relações configuráveis de um tipo de entidade.
+ */
 export type RepositoryRelations<T> = {
     [K in keyof T as ExtractRelationConfig<T[K]> extends never ? never : K]?: ExtractRelationConfig<T[K]>;
 };
 
 type AnySelect<M extends Prisma.ModelName> = Prisma.TypeMap['model'][M]['operations']['findMany']['args']['select'];
 
+/**
+ * Configuração principal usada em `setupVSRepo<T, M>()(config)`.
+ *
+ * @template T Tipo da entidade manipulada pelo repository.
+ * @template M Nome do modelo Prisma.
+ * @template SM Mapa de select models nomeados.
+ */
 export type RepoConfig<T, M extends Prisma.ModelName, SM extends Record<string, AnySelect<M>> = Record<string, AnySelect<M>>> = {
+    /** Nome da tabela/modelo no Prisma. */
     tableName: Uncapitalize<M>;
+    /** Nome da chave primária da entidade. */
     pkName: keyof T;
+    /** Projeções de dados nomeadas e reutilizáveis. */
     selectModels?: SM;
-    defaultSelectModel?: keyof SM;
+    /** Select model aplicado por padrão quando nenhum for informado. */
+    defaultSelectModel?: Extract<keyof SM, string>;
+    /** Filtros aplicados automaticamente em todas as queries do repository. */
     requiredWhere?: WhereModel<M>;
+    /** Configuração das relações gerenciadas pelo `save`. */
     relations?: RepositoryRelations<T>;
+    /** Métodos dinâmicos expostos pelo repository. */
     methods?: Record<string, MethodConfig<M, SM>>;
 };
 
-export type BuiltRepository<T extends object, M extends Prisma.ModelName, Config extends RepoConfig<T, M>, C extends BuildConfig<keyof ExtractSelectModels<Config>> | undefined> = {
+/**
+ * Tipo final retornado por `.build(prisma)`.
+ *
+ * Combina métodos dinâmicos, métodos base e extensões personalizadas.
+ */
+export type BuiltRepository<T extends object, M extends Prisma.ModelName, Config extends RepoConfig<T, M, any>, C extends BuildConfig<any> | undefined> = {
+    /**
+     * Estende o repository com métodos personalizados sem perder a tipagem.
+     */
     extend<E>(extensionFunc: (repo: BuiltRepository<T, M, Config, C>) => E): BuiltRepository<T, M, Config, C> & E;
 } & DynamicMethods<T, M, Config, PrismaModelInputs<M>> & InjectedBaseMethods<T, M, Config, C>;
 
-export declare class VSRepository<T extends object, M extends Prisma.ModelName, const Config extends RepoConfig<T, M> = RepoConfig<T, M>> {
+/**
+ * Fábrica tipada de repositories baseada na configuração do modelo Prisma.
+ */
+export declare class VSRepository<T extends object, M extends Prisma.ModelName, const Config extends RepoConfig<T, M, any> = RepoConfig<T, M, any>> {
+    /** Configuração original informada no `setupVSRepo`. */
     readonly config: Config;
+    /**
+     * Cria uma instância configurável de `VSRepository`.
+     */
     constructor(config: Config);
-    build<C extends BuildConfig<keyof ExtractSelectModels<Config>>>(prisma: DbClient, config?: C): BuiltRepository<T, M, Config, C>;
+    /**
+     * Constrói o repository final com os métodos base e dinâmicos.
+     */
+    build<C extends BuildConfig<any>>(prisma: DbClient, config?: C): BuiltRepository<T, M, Config, C>;
     vsrepocache: never;
 }
 
-export type RepositoryOf<TRepo, C = undefined, E = unknown> =
+/**
+ * Infere o tipo de um repository já configurado a partir de uma instância de `VSRepository`.
+ *
+ * Também permite informar manualmente o `BuildConfig` e o tipo de extensões.
+ */
+export type RepositoryOf<TRepo, C extends BuildConfig<any> | undefined = undefined, E = unknown> =
     TRepo extends VSRepository<infer T, infer M, infer Config>
         ? BuiltRepository<T, M, Config, C> & E
         : never;
 
+/**
+ * Tipo utilitário usado para validar a configuração de um repository em tempo de compilação.
+ */
 export type ValidateRepoConfig<T extends object, M extends Prisma.ModelName, Config> = {
+    /** Nome da tabela/modelo no Prisma. */
     tableName: Uncapitalize<M>;
+    /** Nome da chave primária da entidade. */
     pkName: keyof T;
+    /** Mapa de select models disponíveis. */
     selectModels?: SelectModels<M>;
-    defaultSelectModel?: Config extends { selectModels: infer SM } ? (keyof SM extends never ? string : keyof SM) : string;
+    /** Chave do select model padrão. */
+    defaultSelectModel?: Config extends { selectModels: infer SM } ? (keyof SM extends never ? string : Extract<keyof SM, string>) : string;
+    /** Filtros globais aplicados às queries do repository. */
     requiredWhere?: WhereModel<M>;
+    /** Relações gerenciadas automaticamente pelo `save`. */
     relations?: RepositoryRelations<T>;
+    /** Mapa dos métodos dinâmicos e suas regras de validação. */
     methods?: {
         [K in keyof (Config extends { methods: infer Meth } ? Meth : {})]: K extends string
             ? HasMultipleANDs<K> extends true
@@ -368,6 +557,12 @@ export type ValidateRepoConfig<T extends object, M extends Prisma.ModelName, Con
     };
 };
 
+/**
+ * Cria uma fábrica tipada para definir repositories fortemente tipados com Prisma.
+ *
+ * Use esta função para declarar `tableName`, `pkName`, `selectModels`,
+ * `requiredWhere`, `relations` e `methods` do seu repository.
+ */
 export declare function setupVSRepo<T extends object, M extends Prisma.ModelName>(): <
     const SM extends Record<string, SelectModel<M>>,
     const Config extends RepoConfig<T, M, SM>

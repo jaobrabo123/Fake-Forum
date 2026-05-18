@@ -4,8 +4,10 @@ import { AuthGuard } from "./auth.guard";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtModule } from "@nestjs/jwt";
-import { ConfigService } from "@nestjs/config/dist/config.service";
+import { ConfigService } from "@nestjs/config";
 import { UserModule } from "../resources/user/user.module";
+import { RedisModule } from "../redis/redis.module";
+import { SessionService } from "./session.service";
 
 @Module({
     imports: [
@@ -13,13 +15,14 @@ import { UserModule } from "../resources/user/user.module";
         JwtModule.registerAsync({
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
-                secret: configService.getOrThrow("JWT_SECRET"),
-                signOptions: { expiresIn: "1d" },
+                secret: configService.getOrThrow("JWT_ACCESS_SECRET"),
+                signOptions: { expiresIn: "15m" },
             }),
         }),
+        RedisModule,
     ],
     controllers: [AuthController],
-    providers: [Argon2Service, AuthGuard, AuthService],
+    providers: [Argon2Service, AuthGuard, AuthService, SessionService],
     exports: [Argon2Service, AuthGuard, JwtModule],
 })
 export class AuthModule {}

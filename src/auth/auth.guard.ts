@@ -14,14 +14,18 @@ export class AuthGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest<UnauthRequest>();
-        const authData = this.extractAuthDataFromCookies(request);
-        if (!authData.accessToken)
+        const accessToken =
+            this.extractTokenFromHeader(request) ??
+            this.extractTokenFromCookies(request);
+        if (!accessToken) {
             throw new UnauthorizedException("AccessToken ausente.");
+        }
 
         try {
-            const user = await this.jwtService.verifyAsync<AccessTokenPayload>(
-                authData.accessToken,
-            );
+            const user =
+                await this.jwtService.verifyAsync<AccessTokenPayload>(
+                    accessToken,
+                );
 
             request.user = user;
         } catch (err) {
@@ -33,8 +37,12 @@ export class AuthGuard implements CanActivate {
         return true;
     }
 
-    private extractAuthDataFromCookies(request: UnauthRequest) {
-        const { accessToken } = request.cookies;
-        return { accessToken };
+    private extractTokenFromCookies(request: UnauthRequest) {
+        return request.cookies.accessToken;
+    }
+
+    private extractTokenFromHeader(request: UnauthRequest) {
+        const [type, token] = request.headers.authorization?.split(" ") ?? [];
+        return type === "Bearer" ? token : undefined;
     }
 }

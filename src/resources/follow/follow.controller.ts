@@ -15,9 +15,19 @@ import { AuthGuard } from "../../auth/auth.guard";
 import { CurrentUser } from "../../common/decorators/request/current-user.decorator";
 import type { AccessTokenPayload } from "../../auth/entities/token-payload.entity";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
-import { PublicFollow } from "./entities/public-follow.entity";
-import { WithFollowingFollow } from "./entities/with-following-follow.entity";
-import { WithFollowerFollow } from "./entities/with-follower-follow.entity";
+import {
+    PublicFollow,
+    PublicFollowResponse,
+} from "./entities/public-follow.entity";
+import {
+    WithFollowerFollow,
+    WithFollowerFollowResponse,
+} from "./entities/with-follower-follow.entity";
+import { ApiRequireAuth } from "../../common/decorators/request/api-require-auth.decorator";
+import {
+    WithFollowingFollow,
+    WithFollowingFollowResponse,
+} from "./entities/with-following-follow.entity";
 
 @Controller("follow")
 export class FollowController {
@@ -25,31 +35,39 @@ export class FollowController {
 
     @Post()
     @UseGuards(AuthGuard)
-    @ApiCreatedResponse({ type: PublicFollow })
+    @ApiRequireAuth()
+    @ApiCreatedResponse({ type: PublicFollowResponse })
     async create(
-        @Body() createFollowDto: CreateFollowDTO,
+        @Body() createFollowDTO: CreateFollowDTO,
         @CurrentUser() user: AccessTokenPayload,
-    ) {
-        return await this.followService.create(createFollowDto, user);
+    ): Promise<PublicFollow> {
+        return await this.followService.create(createFollowDTO, user);
     }
 
     @Get("following")
     @UseGuards(AuthGuard)
-    @ApiOkResponse({ type: WithFollowingFollow, isArray: true })
-    async findFollowing(@CurrentUser() user: AccessTokenPayload) {
+    @ApiRequireAuth()
+    @ApiOkResponse({ type: WithFollowingFollowResponse, isArray: true })
+    async findFollowing(
+        @CurrentUser() user: AccessTokenPayload,
+    ): Promise<WithFollowingFollow[]> {
         return await this.followService.findFollowing(user);
     }
 
     @Get("followers")
     @UseGuards(AuthGuard)
-    @ApiOkResponse({ type: WithFollowerFollow, isArray: true })
-    async findFollowers(@CurrentUser() user: AccessTokenPayload) {
+    @ApiRequireAuth()
+    @ApiOkResponse({ type: WithFollowerFollowResponse, isArray: true })
+    async findFollowers(
+        @CurrentUser() user: AccessTokenPayload,
+    ): Promise<WithFollowerFollow[]> {
         return await this.followService.findFollowers(user);
     }
 
     @Delete("following/:followingId")
     @UseGuards(AuthGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiRequireAuth()
     async deleteFollowing(
         @Param("followingId") followingId: string,
         @CurrentUser() user: AccessTokenPayload,
