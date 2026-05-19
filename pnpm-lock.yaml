@@ -60,8 +60,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       vsrepo:
-        specifier: ^1.0.7
-        version: 1.0.7(@prisma/client@7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3))
+        specifier: ^1.0.8
+        version: 1.0.8(@prisma/client@7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3))
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.2.0
@@ -3542,8 +3542,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vsrepo@1.0.7:
-    resolution: {integrity: sha512-UppSYtCKyuNlOHuZOIFfYBObSk+zDBD6EgaMyPM9IzAIlYp+x2xXPniILuYDbBCpOZjaOc81ZuEFH9ez/WHiBA==}
+  vsrepo@1.0.8:
+    resolution: {integrity: sha512-EuTG7q0yo89Cpi56qSfOwA+tjx1PmmlxclRPMwmcr5V9WAxdcRgJbacM02jH8JonP9rG8C7YKmtGnbrvA2g4yQ==}
     hasBin: true
     peerDependencies:
       '@prisma/client': ^7.8.0
@@ -7377,7 +7377,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vsrepo@1.0.7(@prisma/client@7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3)):
+  vsrepo@1.0.8(@prisma/client@7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3)):
     dependencies:
       '@prisma/client': 7.8.0(prisma@7.8.0(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@5.9.3))(typescript@5.9.3)
 
