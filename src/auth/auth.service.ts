@@ -10,6 +10,7 @@ import { AccessTokenPayload } from "./entities/token-payload.entity";
 import { ConfigService } from "@nestjs/config";
 import {
     compareRawWithHmacSHA256Hash,
+    createHighEntropyString,
     createHmacSHA256Hash,
 } from "../common/utils/crypto.utils";
 import { SessionService } from "./session.service";
@@ -108,5 +109,22 @@ export class AuthService {
 
     async logout(sessionId: string) {
         await this.sessionService.remove(sessionId);
+    }
+
+    google() {
+        const googleState = createHighEntropyString();
+
+        const params = new URLSearchParams({
+            client_id: this.configService.getOrThrow("GOOGLE_CLIENT_ID"),
+            redirect_uri: this.configService.getOrThrow("GOOGLE_REDIRECT_URI"),
+            response_type: "code",
+            scope: "openid email profile",
+            state: googleState,
+        });
+
+        return {
+            googleState,
+            redirectUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
+        };
     }
 }

@@ -1,4 +1,9 @@
-import { BinaryToTextEncoding, createHmac, timingSafeEqual } from "crypto";
+import {
+    BinaryToTextEncoding,
+    createHmac,
+    randomBytes,
+    timingSafeEqual,
+} from "crypto";
 
 export function createHmacSHA256Hash(
     rawValue: string,
@@ -29,4 +34,11 @@ export function compareRawWithHmacSHA256Hash(
     const incomingHash = createHmacSHA256Hash(rawValue, encoding);
     const isValid = compareHashes(incomingHash, trueHash, encoding);
     return isValid;
+}
+
+export function createHighEntropyString(
+    bytesSize = 32,
+    encoding: BufferEncoding = "hex",
+) {
+    return randomBytes(bytesSize).toString(encoding);
 }

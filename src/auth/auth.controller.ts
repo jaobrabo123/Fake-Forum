@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
     Post,
@@ -17,6 +18,7 @@ import {
     clearAccessTokenCookie,
     clearRefreshTokenCookie,
     setAccessTokenCookie,
+    setGoogleStateCookie,
     setRefreshTokenCookie,
 } from "../common/utils/cookie.util";
 import type { UnauthRequest } from "./entities/unauth-request.entity";
@@ -72,5 +74,14 @@ export class AuthController {
 
         clearAccessTokenCookie(res);
         clearRefreshTokenCookie(res);
+    }
+
+    @Get("google")
+    google(@Res() res: Response) {
+        const { googleState, redirectUrl } = this.authService.google();
+
+        setGoogleStateCookie(googleState, res);
+
+        return res.redirect(redirectUrl);
     }
 }

@@ -35,3 +35,12 @@ export function clearRefreshTokenCookie(res: Response) {
         path: "/auth/refresh",
     });
 }
+
+export function setGoogleStateCookie(googleState: string, res: Response) {
+    res.cookie("googleState", googleState, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 10 * 60 * 1000,
+    });
+}
