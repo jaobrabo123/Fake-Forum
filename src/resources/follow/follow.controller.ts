@@ -29,7 +29,7 @@ import {
     WithFollowingFollowResponse,
 } from "./entities/with-following-follow.entity";
 
-@Controller("follow")
+@Controller("follows")
 export class FollowController {
     constructor(private readonly followService: FollowService) {}
 

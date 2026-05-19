@@ -22,7 +22,11 @@ export class PublicPostResponse extends SuccessResponseBody<PublicPost> {
     declare content: PublicPost;
 }
 
-export class PublicPostResponseWithMeta extends PublicPostResponse {
+export class PublicPostResponseWithMeta extends SuccessResponseBody<
+    PublicPost[]
+> {
     @ApiProperty()
     declare meta: Meta;
+
+    declare content: PublicPost[];
 }

@@ -7,6 +7,7 @@ import { UserProfileModule } from "./resources/user-profile/user-profile.module"
 import { FollowModule } from "./resources/follow/follow.module";
 import { PostModule } from "./resources/post/post.module";
 import { RedisModule } from "./redis/redis.module";
+import { CommentModule } from "./resources/comment/comment.module";
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { RedisModule } from "./redis/redis.module";
         FollowModule,
         PostModule,
         RedisModule,
+        CommentModule,
     ],
 })
 export class AppModule {}

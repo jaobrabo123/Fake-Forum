@@ -26,7 +26,7 @@ import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { FindPostsQueryDTO } from "./dto/find-posts-query.dto";
 import { Meta } from "../../common/interceptors/entities/meta.entity";
 
-@Controller("post")
+@Controller("posts")
 export class PostController {
     constructor(private readonly postService: PostService) {}
 
@@ -44,7 +44,7 @@ export class PostController {
     @Get()
     @UseGuards(AuthGuard)
     @ApiRequireAuth()
-    @ApiOkResponse({ type: PublicPostResponseWithMeta, isArray: true })
+    @ApiOkResponse({ type: PublicPostResponseWithMeta })
     async findAll(
         @Query() query: FindPostsQueryDTO,
     ): Promise<{ content: PublicPost[]; meta: Meta }> {

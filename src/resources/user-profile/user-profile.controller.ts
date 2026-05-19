@@ -23,7 +23,7 @@ import { ApiRequireAuth } from "../../common/decorators/request/api-require-auth
 import { PublicUserProfileWithTags } from "./entities/public-user-profile-with-tags.entity";
 import { CreateUserProfileWithTagsDTO } from "./dto/create-user-profile-with-tags.dto";
 
-@Controller("userprofile")
+@Controller("userprofiles")
 export class UserProfileController {
     constructor(private readonly userProfileService: UserProfileService) {}
 

@@ -9,6 +9,11 @@ import {
 
 type Post = PostGetPayload<{ include: { tags: true } }>;
 
+export const postRequiredWhere = {
+    userProfile: userProfileRequiredWhere,
+    published: true,
+};
+
 const postVSRepo = setupVSRepo<Post, "Post">()({
     tableName: "post",
     pkName: "id",
@@ -25,7 +30,7 @@ const postVSRepo = setupVSRepo<Post, "Post">()({
         },
     },
     defaultSelectModel: "public",
-    requiredWhere: { userProfile: userProfileRequiredWhere, published: true },
+    requiredWhere: postRequiredWhere,
     relations: {
         tags: {
             mode: "mtm",
@@ -41,6 +46,8 @@ const postVSRepo = setupVSRepo<Post, "Post">()({
         countByTitleContainsInsensitiveOptional: { map: true },
 
         findById: { map: true, fbMode: "one" },
+
+        existsById: { map: true },
     },
 });
 
