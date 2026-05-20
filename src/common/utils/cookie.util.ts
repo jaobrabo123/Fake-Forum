@@ -40,7 +40,15 @@ export function setGoogleStateCookie(googleState: string, res: Response) {
     res.cookie("googleState", googleState, {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "lax",
         maxAge: 10 * 60 * 1000,
+    });
+}
+
+export function clearGoogleStateCookie(res: Response) {
+    res.clearCookie("googleState", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
     });
 }

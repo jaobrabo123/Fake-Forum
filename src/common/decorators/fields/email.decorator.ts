@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { IsEmail } from "class-validator";
+import { IsEmail, ValidateIf } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -9,6 +9,8 @@ export function EmailField(config?: FieldConfig) {
     ];
 
     if (config) {
+        if (config.nullAble)
+            decorators.push(ValidateIf((_, value) => value !== null));
         if (config.apiProperty)
             decorators.push(ApiProperty(config.apiPropertyOptions));
     }

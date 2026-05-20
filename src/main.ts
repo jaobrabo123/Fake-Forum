@@ -1,8 +1,8 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { UnprocessableEntityException, ValidationPipe } from "@nestjs/common";
-import { SwaggerModule } from "@nestjs/swagger/dist/swagger-module";
-import { DocumentBuilder } from "@nestjs/swagger/dist/document-builder";
+import { SwaggerModule } from "@nestjs/swagger";
+import { DocumentBuilder } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import { PrismaClientExceptionFilter } from "./common/filters/prisma-client-exception.filter";
 import { UnknownExceptionFilter } from "./common/filters/unknown-exception.filter";

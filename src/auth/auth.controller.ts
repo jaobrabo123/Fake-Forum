@@ -5,6 +5,7 @@ import {
     HttpCode,
     HttpStatus,
     Post,
+    Query,
     Req,
     Res,
     UseGuards,
@@ -16,6 +17,7 @@ import { ApiOkResponse } from "@nestjs/swagger";
 import { LoginData, LoginDataResponse } from "./entities/login-data.entity";
 import {
     clearAccessTokenCookie,
+    clearGoogleStateCookie,
     clearRefreshTokenCookie,
     setAccessTokenCookie,
     setGoogleStateCookie,
@@ -24,6 +26,7 @@ import {
 import type { UnauthRequest } from "./entities/unauth-request.entity";
 import type { AuthRequest } from "./entities/auth-request.entity";
 import { AuthGuard } from "./auth.guard";
+import { Cookies } from "../common/decorators/request/cookies.decorator";
 
 @Controller("auth")
 export class AuthController {
@@ -83,5 +86,25 @@ export class AuthController {
         setGoogleStateCookie(googleState, res);
 
         return res.redirect(redirectUrl);
+    }
+
+    @Get("google/callback")
+    async googleLogin(
+        @Res({ passthrough: true }) res: Response,
+        @Query("code") code: string,
+        @Query("state") state: string,
+        @Cookies("googleState") googleStateCookie: string | undefined,
+    ) {
+        const { cookies } = await this.authService.googleLogin(
+            code,
+            state,
+            googleStateCookie,
+        );
+
+        clearGoogleStateCookie(res);
+        setAccessTokenCookie(cookies.accessToken, res);
+        setRefreshTokenCookie(cookies.refreshToken, res);
+
+        return { accessToken: cookies.accessToken };
     }
 }

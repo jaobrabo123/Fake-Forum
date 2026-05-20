@@ -7,7 +7,7 @@ import {
     userProfileSelectModels,
 } from "../user-profile/user-profile.repository";
 
-type Post = PostGetPayload<{ include: { tags: true } }>;
+type Post = PostGetPayload<{ include: { tags: true; comments: true } }>;
 
 export const postRequiredWhere = {
     userProfile: userProfileRequiredWhere,
@@ -48,6 +48,14 @@ const postVSRepo = setupVSRepo<Post, "Post">()({
         findById: { map: true, fbMode: "one" },
 
         existsById: { map: true },
+
+        findManyByUserProfileIdNotAndTagsSomeIdInPaginatedAndOrdered: {
+            map: true,
+        },
+
+        countByUserProfileIdNotAndTagsSomeIdIn: {
+            map: true,
+        },
     },
 });
 

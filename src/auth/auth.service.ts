@@ -1,4 +1,10 @@
-import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+    BadRequestException,
+    ForbiddenException,
+    Inject,
+    Injectable,
+    UnauthorizedException,
+} from "@nestjs/common";
 import {
     USER_REPOSITORY,
     type UserRepository,
@@ -14,6 +20,7 @@ import {
     createHmacSHA256Hash,
 } from "../common/utils/crypto.utils";
 import { SessionService } from "./session.service";
+import { GoogleUser } from "./entities/google-user.entity";
 
 @Injectable()
 export class AuthService {
@@ -62,6 +69,10 @@ export class AuthService {
     async login(dto: LoginDTO) {
         const user = await this.userRepository.findAuthByEmail(dto.email);
         if (!user) throw new UnauthorizedException("Credenciais inválidas.");
+        if (!user.password)
+            throw new BadRequestException(
+                "Esta conta utiliza login com Google. Entre com o Google.",
+            );
 
         const validPassword = await this.argon2Service.compare(
             user.password,
@@ -126,5 +137,71 @@ export class AuthService {
             googleState,
             redirectUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
         };
+    }
+
+    async googleLogin(code: string, state: string, cookieState?: string) {
+        if (state !== cookieState)
+            throw new UnauthorizedException("Google state inválido.");
+
+        const tokenResponse = await fetch(
+            "https://oauth2.googleapis.com/token",
+            {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+                body: JSON.stringify({
+                    code,
+                    client_id:
+                        this.configService.getOrThrow<string>(
+                            "GOOGLE_CLIENT_ID",
+                        ),
+                    client_secret: this.configService.getOrThrow<string>(
+                        "GOOGLE_CLIENT_SECRET",
+                    ),
+                    redirect_uri: this.configService.getOrThrow<string>(
+                        "GOOGLE_REDIRECT_URI",
+                    ),
+                    grant_type: "authorization_code",
+                }),
+            },
+        );
+        if (!tokenResponse.ok) {
+            throw new UnauthorizedException("Falha ao obter token do Google.");
+        }
+        const tokenData = (await tokenResponse.json()) as {
+            access_token: string;
+        };
+
+        const userResponse = await fetch(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            {
+                headers: {
+                    Authorization: "Bearer " + tokenData.access_token,
+                },
+            },
+        );
+        if (!userResponse.ok) {
+            throw new UnauthorizedException(
+                "Falha ao obter usuário do Google.",
+            );
+        }
+        const googlerUserData = (await userResponse.json()) as GoogleUser;
+
+        if (!googlerUserData.email_verified) {
+            throw new ForbiddenException(
+                "Para logar com o Google seu email precisa estar verificado.",
+            );
+        }
+
+        let user = await this.userRepository.findByEmail(googlerUserData.email);
+
+        if (!user) {
+            user = await this.userRepository.save({
+                email: googlerUserData.email,
+            });
+        }
+
+        return this.generateTokens(user.id, user.email);
     }
 }

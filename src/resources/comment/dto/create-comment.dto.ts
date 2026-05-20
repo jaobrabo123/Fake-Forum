@@ -1,4 +1,3 @@
-import { IsOptional } from "class-validator";
 import { StringField, UUIDField } from "../../../common/decorators/fields";
 
 export class CreateCommentDto {
@@ -8,7 +7,6 @@ export class CreateCommentDto {
     @UUIDField({ apiProperty: true })
     postId!: string;
 
-    @IsOptional()
-    @UUIDField({ apiProperty: true })
-    replyToId?: string;
+    @UUIDField({ apiProperty: true, nullAble: true })
+    replyToId!: string | null;
 }

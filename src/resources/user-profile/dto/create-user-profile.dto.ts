@@ -1,4 +1,3 @@
-import { IsOptional } from "class-validator";
 import {
     DateField,
     StringField,
@@ -9,14 +8,12 @@ export class CreateUserProfileDTO {
     @StringField({ max: 150, apiProperty: true })
     name!: string;
 
-    @StringField({ max: 3000, apiProperty: true })
-    @IsOptional()
-    description?: string | null;
+    @StringField({ max: 3000, apiProperty: true, nullAble: true })
+    description!: string | null;
 
     @DateField({ nonFuture: true, apiProperty: true, convertDate: true })
     birthDate!: Date;
 
-    @UrlField({ apiProperty: true })
-    @IsOptional()
-    image?: string | null;
+    @UrlField({ apiProperty: true, nullAble: true })
+    image!: string | null;
 }

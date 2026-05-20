@@ -25,6 +25,7 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { FindPostsQueryDTO } from "./dto/find-posts-query.dto";
 import { Meta } from "../../common/interceptors/entities/meta.entity";
+import { PaginationQueryDTO } from "../../common/dto/pagination-query.dto";
 
 @Controller("posts")
 export class PostController {
@@ -49,6 +50,17 @@ export class PostController {
         @Query() query: FindPostsQueryDTO,
     ): Promise<{ content: PublicPost[]; meta: Meta }> {
         return await this.postService.findAll(query);
+    }
+
+    @Get("recommended")
+    @UseGuards(AuthGuard)
+    @ApiRequireAuth()
+    @ApiOkResponse({ type: PublicPostResponseWithMeta })
+    async findRecommended(
+        @Query() query: PaginationQueryDTO,
+        @CurrentUser() user: AccessTokenPayload,
+    ): Promise<{ content: PublicPost[]; meta: Meta }> {
+        return await this.postService.findRecommended(query, user);
     }
 
     @Get(":id")

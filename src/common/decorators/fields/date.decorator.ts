@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { IsDate, MaxDate, MinDate } from "class-validator";
+import { IsDate, MaxDate, MinDate, ValidateIf } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
@@ -44,6 +44,8 @@ export function DateField(config?: DateFieldConfig) {
 
         if (config.convertDate) decorators.push(Type(() => Date));
 
+        if (config.nullAble)
+            decorators.push(ValidateIf((_, value) => value !== null));
         if (config.apiProperty)
             decorators.push(ApiProperty(config.apiPropertyOptions));
     }

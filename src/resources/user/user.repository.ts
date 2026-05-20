@@ -59,6 +59,8 @@ const userVSRepo = setupVSRepo<
         },
 
         existsByEmail: { map: true },
+
+        findByEmail: { map: true, fbMode: "one" },
     },
 });
 

@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { IsBoolean } from "class-validator";
+import { IsBoolean, ValidateIf } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -9,6 +9,8 @@ export function BooleanField(config?: FieldConfig) {
     ];
 
     if (config) {
+        if (config.nullAble)
+            decorators.push(ValidateIf((_, value) => value !== null));
         if (config.apiProperty)
             decorators.push(ApiProperty(config.apiPropertyOptions));
     }

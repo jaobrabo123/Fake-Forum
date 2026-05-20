@@ -1,6 +1,12 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+import {
+    IsNotEmpty,
+    IsString,
+    MaxLength,
+    MinLength,
+    ValidateIf,
+} from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 
 interface StringFieldConfig extends FieldConfig {
@@ -27,6 +33,8 @@ export function StringField(config?: StringFieldConfig) {
                     message: `Campo deve ter no mínimo ${config.min} caracteres.`,
                 }),
             );
+        if (config.nullAble)
+            decorators.push(ValidateIf((_, value) => value !== null));
         if (config.apiProperty)
             decorators.push(ApiProperty(config.apiPropertyOptions));
     }

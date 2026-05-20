@@ -12,6 +12,7 @@ import {
     genMetaObject,
     paginationByQuery,
 } from "../../common/utils/format.util";
+import { PaginationQueryDTO } from "../../common/dto/pagination-query.dto";
 
 @Injectable()
 export class PostService {
@@ -89,5 +90,37 @@ export class PostService {
         this.postValidator.isMyPost(post, userProfile);
 
         await this.postRepository.remove(id);
+    }
+
+    async findRecommended(query: PaginationQueryDTO, user: AccessTokenPayload) {
+        const userProfile = await this.userProfileRepository.findByUserId(
+            user.id,
+            { selectModel: "withTagsAndPostTags" },
+        );
+        this.postValidator.canManagePosts(userProfile);
+
+        const profileTags = userProfile.tags.map((tg) => tg.id);
+        const profilePostsTags = userProfile.posts.flatMap((p) =>
+            p.tags.map((tg) => tg.id),
+        );
+        const userTags = [...new Set([...profileTags, ...profilePostsTags])];
+
+        const [recommendedPosts, total] = await Promise.all([
+            this.postRepository.findManyByUserProfileIdNotAndTagsSomeIdInPaginatedAndOrdered(
+                userProfile.id,
+                userTags,
+                paginationByQuery(query),
+                { updatedAt: "desc" },
+            ),
+            this.postRepository.countByUserProfileIdNotAndTagsSomeIdIn(
+                userProfile.id,
+                userTags,
+            ),
+        ]);
+
+        return {
+            content: recommendedPosts,
+            meta: genMetaObject(query, total),
+        };
     }
 }

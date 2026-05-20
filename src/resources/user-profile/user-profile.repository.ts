@@ -30,6 +30,20 @@ export const userProfileSelectModels = {
         updatedAt: true,
         tags: true,
     },
+    withTagsAndPostTags: {
+        id: true,
+        name: true,
+        birthDate: true,
+        description: true,
+        active: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+        tags: true,
+        posts: {
+            select: { tags: true },
+        },
+    },
 } satisfies SelectModels<"UserProfile">;
 
 export const userProfileRequiredWhere = {

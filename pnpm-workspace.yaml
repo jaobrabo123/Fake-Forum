@@ -5,3 +5,5 @@ allowBuilds:
   argon2: true
   prisma: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - vsrepo@1.0.9
