@@ -6,4 +6,4 @@ allowBuilds:
   prisma: true
   unrs-resolver: true
 minimumReleaseAgeExclude:
-  - vsrepo@1.0.9
+  - vsrepo@1.1.0
