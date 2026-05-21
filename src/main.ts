@@ -8,11 +8,18 @@ import { PrismaClientExceptionFilter } from "./common/filters/prisma-client-exce
 import { UnknownExceptionFilter } from "./common/filters/unknown-exception.filter";
 import { SuccessResponseInterceptor } from "./common/interceptors/success-response.interceptor";
 import { corsConfig } from "./configs/cors.config";
+import helmet from "helmet";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     app.use(cookieParser());
+
+    app.use(
+        helmet({
+            contentSecurityPolicy: false,
+        }),
+    );
 
     app.useGlobalPipes(
         new ValidationPipe({
