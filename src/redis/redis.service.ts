@@ -152,4 +152,13 @@ export class RedisService {
         await this.sadd(key, ...values);
         return await this.expire(key, ttl, option);
     }
+
+    /**
+     * Método para salvar várias chaves e valores no Redis de uma vez
+     * @param data Objeto ou Map contendo as chaves e valores a serem salvos
+     * @returns "OK" se der certo
+     */
+    async mset(data: object | Map<string, string | number>) {
+        return await this.redis.mset(data);
+    }
 }
