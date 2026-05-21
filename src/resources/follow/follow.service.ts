@@ -26,7 +26,7 @@ export class FollowService {
     async create(dto: CreateFollowDTO, user: AccessTokenPayload) {
         const [following, follower] = await Promise.all([
             this.userProfileRepository.get(dto.followingId),
-            this.userProfileRepository.findByUserId(user.id),
+            this.userProfileRepository.findByUserId(user.sub),
         ]);
 
         this.followValidator.canManageFollows(follower);
@@ -50,7 +50,9 @@ export class FollowService {
     }
 
     async findFollowing(user: AccessTokenPayload) {
-        const follower = await this.userProfileRepository.findByUserId(user.id);
+        const follower = await this.userProfileRepository.findByUserId(
+            user.sub,
+        );
 
         this.followValidator.canManageFollows(follower);
 
@@ -61,18 +63,20 @@ export class FollowService {
 
     async findFollowers(user: AccessTokenPayload) {
         const following = await this.userProfileRepository.findByUserId(
-            user.id,
+            user.sub,
         );
 
         this.followValidator.canManageFollows(following);
 
-        return await this.followRepository.findByFollowingId(user.id, {
+        return await this.followRepository.findByFollowingId(user.sub, {
             selectModel: "withFollower",
         });
     }
 
     async deleteFollowing(followingId: string, user: AccessTokenPayload) {
-        const follower = await this.userProfileRepository.findByUserId(user.id);
+        const follower = await this.userProfileRepository.findByUserId(
+            user.sub,
+        );
 
         this.followValidator.canManageFollows(follower);
 

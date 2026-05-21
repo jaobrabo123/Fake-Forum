@@ -1,5 +1,8 @@
 export interface AccessTokenPayload {
-    id: string;
-    email: string;
+    sub: string;
+    sessionId: string;
+}
+
+export interface RefreshTokenPayload {
     sessionId: string;
 }

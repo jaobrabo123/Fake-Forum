@@ -26,7 +26,7 @@ export class PostService {
 
     async create(dto: CreatePostDTO, user: AccessTokenPayload) {
         const userProfile = await this.userProfileRepository.findByUserId(
-            user.id,
+            user.sub,
         );
 
         // * Valido se tem perfil e se está ativo
@@ -67,7 +67,7 @@ export class PostService {
     async update(id: string, dto: CreatePostDTO, user: AccessTokenPayload) {
         const [post, userProfile] = await Promise.all([
             this.postRepository.get(id),
-            this.userProfileRepository.findByUserId(user.id),
+            this.userProfileRepository.findByUserId(user.sub),
         ]);
 
         this.postValidator.canManagePosts(userProfile);
@@ -83,7 +83,7 @@ export class PostService {
     async remove(id: string, user: AccessTokenPayload) {
         const [post, userProfile] = await Promise.all([
             this.postRepository.get(id),
-            this.userProfileRepository.findByUserId(user.id),
+            this.userProfileRepository.findByUserId(user.sub),
         ]);
 
         this.postValidator.canManagePosts(userProfile);
@@ -94,7 +94,7 @@ export class PostService {
 
     async findRecommended(query: PaginationQueryDTO, user: AccessTokenPayload) {
         const userProfile = await this.userProfileRepository.findByUserId(
-            user.id,
+            user.sub,
             { selectModel: "withTagsAndPostTags" },
         );
         this.postValidator.canManagePosts(userProfile);

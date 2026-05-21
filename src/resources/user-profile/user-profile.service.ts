@@ -20,7 +20,7 @@ export class UserProfileService {
 
     async create(userProfile: CreateUserProfileDTO, user: AccessTokenPayload) {
         const hasProfile = await this.userProfileRepository.existsByUserId(
-            user.id,
+            user.sub,
         );
         if (hasProfile)
             throw new BadRequestException("Você já possui um perfil");
@@ -28,7 +28,7 @@ export class UserProfileService {
         return await this.userProfileRepository.save(
             {
                 ...userProfile,
-                userId: user.id,
+                userId: user.sub,
             },
             { selectModel: "withTags" },
         );
@@ -39,9 +39,12 @@ export class UserProfileService {
     }
 
     async findMe(user: AccessTokenPayload) {
-        const profile = await this.userProfileRepository.findByUserId(user.id, {
-            selectModel: "withTags",
-        });
+        const profile = await this.userProfileRepository.findByUserId(
+            user.sub,
+            {
+                selectModel: "withTags",
+            },
+        );
         if (!profile) throw new NotFoundException("Perfil não encontrado.");
         return profile;
     }
@@ -55,21 +58,21 @@ export class UserProfileService {
     }
 
     async update(dto: CreateUserProfileDTO, user: AccessTokenPayload) {
-        const profile = await this.userProfileRepository.findByUserId(user.id);
+        const profile = await this.userProfileRepository.findByUserId(user.sub);
         if (!profile) throw new NotFoundException("Perfil não encontrado");
         return await this.userProfileRepository.save(
             {
                 ...dto,
                 id: profile.id,
-                userId: user.id,
+                userId: user.sub,
             },
             { selectModel: "withTags" },
         );
     }
 
     async remove(user: AccessTokenPayload) {
-        const profile = await this.userProfileRepository.findByUserId(user.id);
+        const profile = await this.userProfileRepository.findByUserId(user.sub);
         if (!profile) throw new NotFoundException("Perfil não encontrado");
-        await this.userProfileRepository.deleteByUserId(user.id);
+        await this.userProfileRepository.deleteByUserId(user.sub);
     }
 }

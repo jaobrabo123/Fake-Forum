@@ -33,7 +33,7 @@ export class CommentService {
     async create(dto: CreateCommentDto, user: AccessTokenPayload) {
         const [postExists, userProfile] = await Promise.all([
             this.postRepository.existsById(dto.postId),
-            this.userProfilesRepository.findByUserId(user.id),
+            this.userProfilesRepository.findByUserId(user.sub),
         ]);
 
         if (!postExists) {
@@ -87,7 +87,7 @@ export class CommentService {
     async update(id: string, dto: UpdateCommentDto, user: AccessTokenPayload) {
         const [comment, userProfile] = await Promise.all([
             this.commentRepository.get(id),
-            this.userProfilesRepository.findByUserId(user.id),
+            this.userProfilesRepository.findByUserId(user.sub),
         ]);
 
         if (!comment) {
@@ -105,7 +105,7 @@ export class CommentService {
     async remove(id: string, user: AccessTokenPayload) {
         const [comment, userProfile] = await Promise.all([
             this.commentRepository.get(id),
-            this.userProfilesRepository.findByUserId(user.id),
+            this.userProfilesRepository.findByUserId(user.sub),
         ]);
 
         if (!comment) {

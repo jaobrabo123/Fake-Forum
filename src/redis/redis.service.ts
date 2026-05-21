@@ -45,4 +45,23 @@ export class RedisService {
     async del(...keys: string[]) {
         return await this.redis.del(...keys);
     }
+
+    async getdel<T>(key: string, toObject: true): Promise<T | null>;
+    async getdel(key: string, toObject: false): Promise<string | null>;
+    async getdel(key: string, toObject: boolean) {
+        try {
+            const result = await this.redis.getdel(key);
+            if (result === null || !toObject) return result;
+
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return JSON.parse(result);
+            } catch {
+                return result;
+            }
+        } catch (err) {
+            console.error(`Falha ao buscar ${key}:`, err);
+            return null;
+        }
+    }
 }

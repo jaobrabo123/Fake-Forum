@@ -12,7 +12,10 @@ import {
 import { LoginDTO } from "./dto/login.dto";
 import { Argon2Service } from "./argon2.service";
 import { JwtService } from "@nestjs/jwt";
-import { AccessTokenPayload } from "./entities/token-payload.entity";
+import {
+    AccessTokenPayload,
+    RefreshTokenPayload,
+} from "./entities/token-payload.entity";
 import { ConfigService } from "@nestjs/config";
 import {
     compareRawWithHmacSHA256Hash,
@@ -33,19 +36,19 @@ export class AuthService {
         private readonly sessionService: SessionService,
     ) {}
 
-    private async generateTokens(userId: string, email: string) {
+    private async generateTokens(userId: string) {
         const sessionId = crypto.randomUUID();
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync<AccessTokenPayload>(
-                { id: userId, email: email, sessionId },
+                { sub: userId, sessionId },
                 {
                     secret: this.configService.getOrThrow("JWT_ACCESS_SECRET"),
                     expiresIn: "15m",
                 },
             ),
-            this.jwtService.signAsync<AccessTokenPayload>(
-                { id: userId, email, sessionId },
+            this.jwtService.signAsync<RefreshTokenPayload>(
+                { sessionId },
                 {
                     secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
                     expiresIn: "7d",
@@ -81,7 +84,7 @@ export class AuthService {
         if (!validPassword)
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        return this.generateTokens(user.id, user.email);
+        return this.generateTokens(user.id);
     }
 
     async refreshTokens(oldRefreshToken: string | undefined) {
@@ -90,7 +93,7 @@ export class AuthService {
         }
 
         try {
-            const user = await this.jwtService.verifyAsync<AccessTokenPayload>(
+            const user = await this.jwtService.verifyAsync<RefreshTokenPayload>(
                 oldRefreshToken,
                 {
                     secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
@@ -110,7 +113,7 @@ export class AuthService {
 
             await this.sessionService.remove(session.id);
 
-            return this.generateTokens(user.id, user.email);
+            return this.generateTokens(session.userId);
         } catch {
             throw new UnauthorizedException(
                 "Refresh token inválido ou expirado.",
@@ -202,6 +205,6 @@ export class AuthService {
             });
         }
 
-        return this.generateTokens(user.id, user.email);
+        return this.generateTokens(user.id);
     }
 }
