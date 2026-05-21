@@ -8,7 +8,7 @@ export class SuccessResponseBody<T> {
     @ApiProperty({ example: 200 })
     statusCode!: number;
 
-    timestamp!: Date;
+    timestamp!: string;
 
     @ApiProperty({ example: "Sucesso" })
     message?: string;
