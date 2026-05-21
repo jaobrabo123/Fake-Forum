@@ -24,14 +24,17 @@ import {
     setRefreshTokenCookie,
 } from "../common/utils/cookie.util";
 import type { UnauthRequest } from "./entities/unauth-request.entity";
-import type { AuthRequest } from "./entities/auth-request.entity";
 import { AuthGuard } from "./auth.guard";
 import { Cookies } from "../common/decorators/request/cookies.decorator";
+import { CurrentUser } from "../common/decorators/request/current-user.decorator";
+import type { AccessTokenPayload } from "./entities/token-payload.entity";
+import { Throttle } from "@nestjs/throttler";
 
 @Controller("auth")
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
+    @Throttle({ general: { limit: 10, ttl: 5 * 60 * 1000 } })
     @Post("login")
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse({ type: LoginDataResponse })
@@ -54,7 +57,7 @@ export class AuthController {
         @Req() req: UnauthRequest,
         @Res({ passthrough: true }) res: Response,
     ): Promise<LoginData> {
-        const { cookies } = await this.authService.refreshTokens(
+        const { cookies } = await this.authService.refresh(
             req.cookies.refreshToken,
         );
 
@@ -68,12 +71,11 @@ export class AuthController {
     @Post("logout")
     @HttpCode(HttpStatus.NO_CONTENT)
     async logout(
-        @Req() req: AuthRequest,
+        @Cookies("refreshToken") refreshToken: string | undefined,
         @Res({ passthrough: true }) res: Response,
+        @CurrentUser() user: AccessTokenPayload,
     ) {
-        const sessionId = req.user.sessionId;
-
-        await this.authService.logout(sessionId);
+        await this.authService.logout(user.sub, refreshToken);
 
         clearAccessTokenCookie(res);
         clearRefreshTokenCookie(res);

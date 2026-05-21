@@ -12,13 +12,9 @@ import {
 import { LoginDTO } from "./dto/login.dto";
 import { Argon2Service } from "./argon2.service";
 import { JwtService } from "@nestjs/jwt";
-import {
-    AccessTokenPayload,
-    RefreshTokenPayload,
-} from "./entities/token-payload.entity";
+import { AccessTokenPayload } from "./entities/token-payload.entity";
 import { ConfigService } from "@nestjs/config";
 import {
-    compareRawWithHmacSHA256Hash,
     createHighEntropyString,
     createHmacSHA256Hash,
 } from "../common/utils/crypto.utils";
@@ -36,31 +32,17 @@ export class AuthService {
         private readonly sessionService: SessionService,
     ) {}
 
-    private async generateTokens(userId: string) {
-        const sessionId = crypto.randomUUID();
+    private async createSession(userId: string) {
+        const accessToken = await this.jwtService.signAsync<AccessTokenPayload>(
+            {
+                sub: userId,
+            },
+        );
 
-        const [accessToken, refreshToken] = await Promise.all([
-            this.jwtService.signAsync<AccessTokenPayload>(
-                { sub: userId, sessionId },
-                {
-                    secret: this.configService.getOrThrow("JWT_ACCESS_SECRET"),
-                    expiresIn: "15m",
-                },
-            ),
-            this.jwtService.signAsync<RefreshTokenPayload>(
-                { sessionId },
-                {
-                    secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
-                    expiresIn: "7d",
-                },
-            ),
-        ]);
-
+        const refreshToken = createHighEntropyString();
         const refreshTokenHash = createHmacSHA256Hash(refreshToken);
 
-        await this.sessionService.create({
-            id: sessionId,
-            refreshTokenHash,
+        await this.sessionService.create(userId, refreshTokenHash, {
             userId,
         });
 
@@ -84,45 +66,29 @@ export class AuthService {
         if (!validPassword)
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        return this.generateTokens(user.id);
+        return this.createSession(user.id);
     }
 
-    async refreshTokens(oldRefreshToken: string | undefined) {
+    async refresh(oldRefreshToken: string | undefined) {
         if (!oldRefreshToken) {
             throw new UnauthorizedException("Refresh token ausente.");
         }
 
-        try {
-            const user = await this.jwtService.verifyAsync<RefreshTokenPayload>(
-                oldRefreshToken,
-                {
-                    secret: this.configService.getOrThrow("JWT_REFRESH_SECRET"),
-                },
-            );
+        const oldRefreshTokenHash = createHmacSHA256Hash(oldRefreshToken);
 
-            const session = await this.sessionService.find(user.sessionId);
-            if (!session)
-                throw new UnauthorizedException("Sessão não encontrada.");
-
-            const isTokenValid = compareRawWithHmacSHA256Hash(
-                oldRefreshToken,
-                session.refreshTokenHash,
-            );
-            if (!isTokenValid)
-                throw new UnauthorizedException("Refresh token inválido.");
-
-            await this.sessionService.remove(session.id);
-
-            return this.generateTokens(session.userId);
-        } catch {
-            throw new UnauthorizedException(
-                "Refresh token inválido ou expirado.",
-            );
+        const session = await this.sessionService.consume(oldRefreshTokenHash);
+        if (!session) {
+            throw new UnauthorizedException("Refresh token inválido.");
         }
+
+        return this.createSession(session.userId);
     }
 
-    async logout(sessionId: string) {
-        await this.sessionService.remove(sessionId);
+    async logout(userId: string, refreshToken?: string) {
+        if (refreshToken) {
+            const refreshTokenHash = createHmacSHA256Hash(refreshToken);
+            await this.sessionService.remove(userId, refreshTokenHash);
+        }
     }
 
     google() {
@@ -205,6 +171,6 @@ export class AuthService {
             });
         }
 
-        return this.generateTokens(user.id);
+        return this.createSession(user.id);
     }
 }

@@ -5,22 +5,15 @@ import Redis from "ioredis";
 export class RedisService {
     constructor(@Inject("REDIS_CLIENT") private readonly redis: Redis) {}
 
-    async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
-        try {
-            const valueFormated =
-                typeof value === "string" ? value : JSON.stringify(value);
+    async set(key: string, value: unknown, ttl?: number): Promise<"OK"> {
+        const valueFormated =
+            typeof value === "string" ? value : JSON.stringify(value);
 
-            if (ttl !== undefined) {
-                await this.redis.set(key, valueFormated, "EX", ttl);
-            } else {
-                await this.redis.set(key, valueFormated);
-            }
-
-            return true;
-        } catch (err) {
-            console.error(`Falha ao armazenar ${key}:`, err);
-            return false;
+        if (ttl !== undefined) {
+            return await this.redis.set(key, valueFormated, "EX", ttl);
         }
+
+        return await this.redis.set(key, valueFormated);
     }
 
     async get<T>(key: string, toObject: true): Promise<T | null>;
@@ -63,5 +56,36 @@ export class RedisService {
             console.error(`Falha ao buscar ${key}:`, err);
             return null;
         }
+    }
+
+    async sadd(key: string, ...values: unknown[]) {
+        const formatedValues = values.map((val) =>
+            typeof val !== "string" ? JSON.stringify(val) : val,
+        );
+
+        return await this.redis.sadd(key, ...formatedValues);
+    }
+
+    async srem(key: string, ...members: string[]) {
+        return await this.redis.srem(key, ...members);
+    }
+
+    async sismember(key: string, member: string) {
+        return !!(await this.redis.sismember(key, member));
+    }
+
+    async expire(key: string, ttl: number, option?: "GT" | "LT" | "NX" | "XX") {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        return !!(await this.redis.expire(key, ttl, option as any));
+    }
+
+    async saddAndExpire(
+        key: string,
+        ttl: number,
+        option: "GT" | "LT" | "NX" | "XX",
+        ...values: unknown[]
+    ) {
+        await this.sadd(key, ...values);
+        return await this.expire(key, ttl, option);
     }
 }

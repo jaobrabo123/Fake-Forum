@@ -6,26 +6,50 @@ import { Session } from "./entities/session.entity";
 export class SessionService {
     constructor(private readonly redisService: RedisService) {}
 
-    private sessionKey(sessionId: string) {
-        return `session:${sessionId}`;
+    private createRefreshKey(refreshTokenHash: string) {
+        return `refresh:${refreshTokenHash}`;
     }
 
-    async create(session: Session) {
-        await this.redisService.set(
-            this.sessionKey(session.id),
-            session,
-            7 * 24 * 60 * 60,
-        );
+    private sessionsKey(userId: string) {
+        return `user:${userId}:sessions`;
     }
 
-    async find(sessionId: string): Promise<Session | null> {
-        return await this.redisService.get<Session>(
-            this.sessionKey(sessionId),
+    async create(userId: string, refreshTokenHash: string, session: Session) {
+        await Promise.all([
+            this.redisService.set(
+                this.createRefreshKey(refreshTokenHash),
+                session,
+                7 * 24 * 60 * 60,
+            ),
+            this.redisService.saddAndExpire(
+                this.sessionsKey(userId),
+                7 * 24 * 60 * 60,
+                "GT",
+                refreshTokenHash,
+            ),
+        ]);
+    }
+
+    async consume(refreshTokenHash: string) {
+        const result = await this.redisService.getdel<Session>(
+            this.createRefreshKey(refreshTokenHash),
             true,
         );
+
+        if (!result) return result;
+
+        await this.redisService.srem(
+            this.sessionsKey(result.userId),
+            refreshTokenHash,
+        );
+
+        return result;
     }
 
-    async remove(sessionId: string) {
-        await this.redisService.del(this.sessionKey(sessionId));
+    async remove(userId: string, refreshTokenHash: string) {
+        await Promise.all([
+            this.redisService.del(this.createRefreshKey(refreshTokenHash)),
+            this.redisService.srem(this.sessionsKey(userId), refreshTokenHash),
+        ]);
     }
 }

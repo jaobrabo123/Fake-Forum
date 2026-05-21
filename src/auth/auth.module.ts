@@ -15,7 +15,7 @@ import { SessionService } from "./session.service";
         JwtModule.registerAsync({
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
-                secret: configService.getOrThrow("JWT_ACCESS_SECRET"),
+                secret: configService.getOrThrow("JWT_SECRET"),
                 signOptions: { expiresIn: "15m" },
             }),
         }),
