@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateCommentDto } from "./dto/create-comment.dto";
+import { CreateCommentDTO } from "./dto/create-comment.dto";
 import {
     COMMENT_REPOSITORY,
     type CommentRepository,
@@ -11,7 +11,7 @@ import {
     type UserProfileRepository,
 } from "../user-profile/user-profile.repository";
 import { CommentValidator } from "./comment.validator";
-import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { UpdateCommentDTO } from "./dto/update-comment.dto";
 import { PaginationQueryDTO } from "../../common/dto/pagination-query.dto";
 import {
     genMetaObject,
@@ -30,7 +30,7 @@ export class CommentService {
         private readonly commentValidator: CommentValidator,
     ) {}
 
-    async create(dto: CreateCommentDto, user: AccessTokenPayload) {
+    async create(dto: CreateCommentDTO, user: AccessTokenPayload) {
         const [postExists, userProfile] = await Promise.all([
             this.postRepository.existsById(dto.postId),
             this.userProfilesRepository.findByUserId(user.sub),
@@ -84,7 +84,7 @@ export class CommentService {
         return { content: posts, meta: genMetaObject(query, total) };
     }
 
-    async update(id: string, dto: UpdateCommentDto, user: AccessTokenPayload) {
+    async update(id: string, dto: UpdateCommentDTO, user: AccessTokenPayload) {
         const [comment, userProfile] = await Promise.all([
             this.commentRepository.get(id),
             this.userProfilesRepository.findByUserId(user.sub),

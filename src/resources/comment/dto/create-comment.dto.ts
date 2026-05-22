@@ -1,6 +1,6 @@
 import { StringField, UUIDField } from "../../../common/decorators/fields";
 
-export class CreateCommentDto {
+export class CreateCommentDTO {
     @StringField({ apiProperty: true, max: 3000 })
     body!: string;
 

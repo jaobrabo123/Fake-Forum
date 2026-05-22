@@ -12,7 +12,7 @@ import {
     HttpStatus,
 } from "@nestjs/common";
 import { CommentService } from "./comment.service";
-import { CreateCommentDto } from "./dto/create-comment.dto";
+import { CreateCommentDTO } from "./dto/create-comment.dto";
 import { AuthGuard } from "../../auth/auth.guard";
 import { CurrentUser } from "../../common/decorators/request/current-user.decorator";
 import type { AccessTokenPayload } from "../../auth/entities/token-payload.entity";
@@ -21,7 +21,7 @@ import {
     PublicCommentResponse,
     PublicCommentResponseWithMeta,
 } from "./entities/public-comment.entity";
-import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { UpdateCommentDTO } from "./dto/update-comment.dto";
 import { PaginationQueryDTO } from "../../common/dto/pagination-query.dto";
 import { Meta } from "../../common/interceptors/entities/meta.entity";
 import { ApiRequireAuth } from "../../common/decorators/request/api-require-auth.decorator";
@@ -36,10 +36,10 @@ export class CommentController {
     @ApiRequireAuth()
     @ApiCreatedResponse({ type: PublicCommentResponse })
     async create(
-        @Body() createCommentDto: CreateCommentDto,
+        @Body() createCommentDTO: CreateCommentDTO,
         @CurrentUser() user: AccessTokenPayload,
     ): Promise<PublicComment> {
-        return await this.commentService.create(createCommentDto, user);
+        return await this.commentService.create(createCommentDTO, user);
     }
 
     @Get(":id")
@@ -78,10 +78,10 @@ export class CommentController {
     @ApiOkResponse({ type: PublicCommentResponse })
     async update(
         @Param("id") id: string,
-        @Body() updateCommentDto: UpdateCommentDto,
+        @Body() updateCommentDTO: UpdateCommentDTO,
         @CurrentUser() user: AccessTokenPayload,
     ): Promise<PublicComment> {
-        return await this.commentService.update(id, updateCommentDto, user);
+        return await this.commentService.update(id, updateCommentDTO, user);
     }
 
     @Delete(":id")
