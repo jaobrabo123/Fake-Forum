@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     HttpStatus,
@@ -134,6 +135,20 @@ export class AuthController {
         return this.authService.findSessions(user);
     }
 
+    @Delete("sessions")
+    @UseGuards(AuthGuard)
+    @ApiRequireAuth()
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async globalLogout(
+        @Res({ passthrough: true }) res: Response,
+        @CurrentUser() user: AccessTokenPayload,
+    ) {
+        await this.authService.globalLogout(user);
+
+        clearAccessTokenCookie(res);
+        clearRefreshTokenCookie(res);
+    }
+
     @Get("sessions/:sessionId")
     @UseGuards(AuthGuard)
     @ApiRequireAuth()
@@ -143,5 +158,16 @@ export class AuthController {
         @CurrentUser() user: AccessTokenPayload,
     ) {
         return this.authService.findSessionsBySessionId(sessionId, user);
+    }
+
+    @Delete("sessions/:sessionId")
+    @UseGuards(AuthGuard)
+    @ApiRequireAuth()
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async remoteLogoutBySessionId(
+        @Param("sessionId") sessionId: string,
+        @CurrentUser() user: AccessTokenPayload,
+    ) {
+        await this.authService.remoteLogoutBySessionId(sessionId, user);
     }
 }

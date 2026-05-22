@@ -9,13 +9,14 @@ datasource db {
 }
 
 model User {
-  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String       @unique @db.VarChar(254)
-  password  String?       @db.VarChar(255)
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime?    @map("deleted_at") @db.Timestamptz(6)
-  profile   UserProfile?
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String       @unique @db.VarChar(254)
+  password     String?      @db.VarChar(255)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  tokenVersion Int          @default(1) @map("token_version") @db.SmallInt
+  profile      UserProfile?
 
   @@map("user")
 }

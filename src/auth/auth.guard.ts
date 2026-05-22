@@ -7,10 +7,14 @@ import {
 import { CustomUnauthRequest } from "./entities/custom-request.entity";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
 import { AccessTokenPayload } from "./entities/token-payload.entity";
+import { SessionService } from "./session.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(private readonly jwtService: JwtService) {}
+    constructor(
+        private readonly jwtService: JwtService,
+        private readonly sessionService: SessionService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context
@@ -25,12 +29,22 @@ export class AuthGuard implements CanActivate {
         }
 
         try {
-            const user =
+            const payload =
                 await this.jwtService.verifyAsync<AccessTokenPayload>(
                     accessToken,
                 );
 
-            request.user = user;
+            const userTokenVersion =
+                await this.sessionService.findTokenVersionByUserId(payload.sub);
+
+            if (
+                userTokenVersion !== null &&
+                userTokenVersion !== payload.tokenVersion
+            ) {
+                throw new Error();
+            }
+
+            request.user = payload;
         } catch (err) {
             if (err instanceof TokenExpiredError)
                 throw new UnauthorizedException("AccessToken expirado.");

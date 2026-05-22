@@ -37,10 +37,12 @@ export class AuthService {
         userId: string,
         userAgent: string | undefined,
         ip: string,
+        userTokenVersion: number,
     ) {
         const accessToken = await this.jwtService.signAsync<AccessTokenPayload>(
             {
                 sub: userId,
+                tokenVersion: userTokenVersion,
             },
         );
 
@@ -55,6 +57,7 @@ export class AuthService {
             userAgent: userAgent ?? "",
             ip,
             createdAt: new Date(),
+            tokenVersion: userTokenVersion,
         });
 
         return {
@@ -77,7 +80,12 @@ export class AuthService {
         if (!validPassword)
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        return await this.createSession(user.id, userAgent, ip);
+        return await this.createSession(
+            user.id,
+            userAgent,
+            ip,
+            user.tokenVersion,
+        );
     }
 
     async refresh(
@@ -96,7 +104,12 @@ export class AuthService {
             throw new UnauthorizedException("Refresh token inválido.");
         }
 
-        return this.createSession(session.userId, userAgent, ip);
+        return this.createSession(
+            session.userId,
+            userAgent,
+            ip,
+            session.tokenVersion,
+        );
     }
 
     async logout(refreshToken?: string) {
@@ -184,7 +197,10 @@ export class AuthService {
             );
         }
 
-        let user = await this.userRepository.findByEmail(googlerUserData.email);
+        let user = await this.userRepository.findByEmail(
+            googlerUserData.email,
+            { selectModel: "tokenVersion" },
+        );
 
         if (!user) {
             user = await this.userRepository.save({
@@ -192,7 +208,7 @@ export class AuthService {
             });
         }
 
-        return this.createSession(user.id, userAgent, ip);
+        return this.createSession(user.id, userAgent, ip, user.tokenVersion);
     }
 
     async findSessions(user: AccessTokenPayload) {
@@ -207,5 +223,29 @@ export class AuthService {
         }
 
         return session;
+    }
+
+    async remoteLogoutBySessionId(sessionId: string, user: AccessTokenPayload) {
+        const removed = await this.sessionService.deleteBySessionIdAndUserId(
+            sessionId,
+            user.sub,
+        );
+
+        if (!removed) {
+            throw new NotFoundException("Sessão não encontrada.");
+        }
+    }
+
+    async globalLogout(user: AccessTokenPayload) {
+        const userData = await this.userRepository.get(user.sub);
+        if (!userData) throw new NotFoundException("Usuário não encontrado.");
+
+        const userWithNewTokenVersion =
+            await this.userRepository.updateTokenVersion(user.sub);
+
+        await this.sessionService.invalidateAllSessionsByUserId(
+            user.sub,
+            userWithNewTokenVersion.tokenVersion,
+        );
     }
 }

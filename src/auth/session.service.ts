@@ -22,6 +22,10 @@ export class SessionService {
         return `session:${sessionId}` as const;
     }
 
+    private userTokenVersionKey(userId: string) {
+        return `user:${userId}:tkv` as const;
+    }
+
     // * Constante para TTL (em segundos) das chaves de sessão no Redis
     private readonly SESSION_TTL = 7 * 24 * 60 * 60;
 
@@ -118,6 +122,84 @@ export class SessionService {
 
         return this.redisService.get<Session>(
             this.refreshKey(refreshHash),
+            true,
+        );
+    }
+
+    async deleteBySessionIdAndUserId(sessionId: string, userId: string) {
+        const refreshHash = await this.redisService.get(
+            this.sessionIdKey(sessionId),
+            false,
+        );
+
+        if (!refreshHash) return false;
+
+        const session = await this.redisService.get<Session>(
+            this.refreshKey(refreshHash),
+            true,
+        );
+
+        if (!session || session.userId !== userId) return false;
+
+        const pipeline = this.redisService.multi();
+
+        pipeline.srem(this.sessionsKey(session.userId), refreshHash);
+        pipeline.del(
+            this.sessionIdKey(session.id),
+            this.refreshKey(refreshHash),
+        );
+
+        await pipeline.exec();
+
+        return true;
+    }
+
+    async invalidateAllSessionsByUserId(
+        userId: string,
+        newTokenVersion: number,
+    ) {
+        const userSessionsKey = this.sessionsKey(userId);
+
+        const sessionsKeys = await this.redisService.smembers(
+            userSessionsKey,
+            false,
+        );
+
+        if (sessionsKeys.length === 0) return;
+
+        const refreshKeysMapped = sessionsKeys.map((key) =>
+            this.refreshKey(key),
+        );
+
+        const sessions = await this.redisService.mget<Session>(
+            refreshKeysMapped,
+            true,
+        );
+
+        const sessionIdKeysMapped = sessions
+            .filter((ses) => !!ses)
+            .map((ses) => this.sessionIdKey(ses.id));
+
+        const pipeline = this.redisService.multi();
+
+        pipeline.del(
+            userSessionsKey,
+            ...refreshKeysMapped,
+            ...sessionIdKeysMapped,
+        );
+        pipeline.set(
+            this.userTokenVersionKey(userId),
+            newTokenVersion,
+            "EX",
+            20 * 60, // * 20 minutos só para garantir que todos os accessToken já foram invalidados
+        );
+
+        await pipeline.exec();
+    }
+
+    findTokenVersionByUserId(userId: string) {
+        return this.redisService.get<number>(
+            this.userTokenVersionKey(userId),
             true,
         );
     }

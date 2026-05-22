@@ -1,6 +1,6 @@
 import { Provider } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-import { RepositoryOf, setupVSRepo } from "../../generated/vsrepo";
+import { /*RepositoryOf,*/ setupVSRepo } from "../../generated/vsrepo";
 import { Prisma } from "../../generated/prisma/client";
 
 const userVSRepo = setupVSRepo<
@@ -20,6 +20,7 @@ const userVSRepo = setupVSRepo<
             id: true,
             email: true,
             password: true,
+            tokenVersion: true,
         },
         withProfile: {
             id: true,
@@ -38,6 +39,10 @@ const userVSRepo = setupVSRepo<
                     updatedAt: true,
                 },
             },
+        },
+        tokenVersion: {
+            id: true,
+            tokenVersion: true,
         },
     },
     defaultSelectModel: "public",
@@ -61,17 +66,50 @@ const userVSRepo = setupVSRepo<
         existsByEmail: { map: true },
 
         findByEmail: { map: true, fbMode: "one" },
+
+        updateById: { map: true },
     },
 });
 
-export type UserRepository = RepositoryOf<typeof userVSRepo>;
+// type BaseUserRepository = RepositoryOf<typeof userVSRepo>;
+
+// const extensionFunc = (repo: BaseUserRepository) => ({
+//     updateTokenVersion: async (userId: string) => {
+//         return repo.updateById(
+//             userId,
+//             { tokenVersion: { increment: 1 } },
+//             { selectModel: "tokenVersion" },
+//         );
+//     },
+// });
+
+// export type UserRepository = RepositoryOf<
+//     typeof userVSRepo,
+//     undefined,
+//     ReturnType<typeof extensionFunc>
+// >;
+
+const setupUserRepository = (prisma: PrismaService) => {
+    return userVSRepo.build(prisma).extend((repo) => ({
+        updateTokenVersion: async (userId: string) => {
+            return repo.updateById(
+                userId,
+                { tokenVersion: { increment: 1 } },
+                { selectModel: "tokenVersion" },
+            );
+        },
+    }));
+};
+
+export type UserRepository = ReturnType<typeof setupUserRepository>;
 
 export const USER_REPOSITORY = Symbol("USER_REPOSITORY");
 
 export const UserRepositoryProvider: Provider = {
     provide: USER_REPOSITORY,
     inject: [PrismaService],
-    useFactory: (prisma: PrismaService) => {
-        return userVSRepo.build(prisma);
-    },
+    // useFactory: (prisma: PrismaService) => {
+    //     return userVSRepo.build(prisma).extend(extensionFunc);
+    // },
+    useFactory: setupUserRepository,
 };

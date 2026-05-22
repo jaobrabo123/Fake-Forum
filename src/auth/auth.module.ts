@@ -23,6 +23,6 @@ import { SessionService } from "./session.service";
     ],
     controllers: [AuthController],
     providers: [Argon2Service, AuthGuard, AuthService, SessionService],
-    exports: [Argon2Service, AuthGuard, JwtModule],
+    exports: [Argon2Service, AuthGuard, JwtModule, SessionService],
 })
 export class AuthModule {}

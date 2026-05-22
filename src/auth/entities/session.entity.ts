@@ -6,6 +6,7 @@ export class Session {
     userAgent!: string;
     ip!: string;
     createdAt!: Date;
+    tokenVersion!: number;
 }
 
 export class SessionsResponse extends SuccessResponseBody<Session[]> {
