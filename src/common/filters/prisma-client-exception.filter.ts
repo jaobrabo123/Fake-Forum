@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common";
-import { UnauthRequest } from "../../auth/entities/unauth-request.entity";
+import { CustomUnauthRequest } from "../../auth/entities/custom-request.entity";
 import type { Response } from "express";
 import http from "http";
 import { PrismaClientKnownRequestError } from "../../generated/prisma/internal/prismaNamespace";
@@ -10,7 +10,7 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
         const ctx = host.switchToHttp();
 
         const response = ctx.getResponse<Response>();
-        const request = ctx.getRequest<UnauthRequest>();
+        const request = ctx.getRequest<CustomUnauthRequest>();
 
         const errorsData: Record<string, { status: number; message: string }> =
             {

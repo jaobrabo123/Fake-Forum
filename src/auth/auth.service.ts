@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     Inject,
     Injectable,
+    NotFoundException,
     UnauthorizedException,
 } from "@nestjs/common";
 import {
@@ -32,7 +33,11 @@ export class AuthService {
         private readonly sessionService: SessionService,
     ) {}
 
-    private async createSession(userId: string) {
+    private async createSession(
+        userId: string,
+        userAgent: string | undefined,
+        ip: string,
+    ) {
         const accessToken = await this.jwtService.signAsync<AccessTokenPayload>(
             {
                 sub: userId,
@@ -42,8 +47,14 @@ export class AuthService {
         const refreshToken = createHighEntropyString();
         const refreshTokenHash = createHmacSHA256Hash(refreshToken);
 
+        const sessionId = crypto.randomUUID();
+
         await this.sessionService.create(userId, refreshTokenHash, {
+            id: sessionId,
             userId,
+            userAgent: userAgent ?? "",
+            ip,
+            createdAt: new Date(),
         });
 
         return {
@@ -51,7 +62,7 @@ export class AuthService {
         };
     }
 
-    async login(dto: LoginDTO) {
+    async login(dto: LoginDTO, userAgent: string | undefined, ip: string) {
         const user = await this.userRepository.findAuthByEmail(dto.email);
         if (!user) throw new UnauthorizedException("Credenciais inválidas.");
         if (!user.password)
@@ -66,10 +77,14 @@ export class AuthService {
         if (!validPassword)
             throw new UnauthorizedException("Credenciais inválidas.");
 
-        return this.createSession(user.id);
+        return await this.createSession(user.id, userAgent, ip);
     }
 
-    async refresh(oldRefreshToken: string | undefined) {
+    async refresh(
+        oldRefreshToken: string | undefined,
+        userAgent: string | undefined,
+        ip: string,
+    ) {
         if (!oldRefreshToken) {
             throw new UnauthorizedException("Refresh token ausente.");
         }
@@ -81,13 +96,13 @@ export class AuthService {
             throw new UnauthorizedException("Refresh token inválido.");
         }
 
-        return this.createSession(session.userId);
+        return this.createSession(session.userId, userAgent, ip);
     }
 
-    async logout(userId: string, refreshToken?: string) {
+    async logout(refreshToken?: string) {
         if (refreshToken) {
             const refreshTokenHash = createHmacSHA256Hash(refreshToken);
-            await this.sessionService.remove(userId, refreshTokenHash);
+            await this.sessionService.consume(refreshTokenHash);
         }
     }
 
@@ -108,7 +123,13 @@ export class AuthService {
         };
     }
 
-    async googleLogin(code: string, state: string, cookieState?: string) {
+    async googleLogin(
+        code: string,
+        state: string,
+        cookieState: string | undefined,
+        userAgent: string | undefined,
+        ip: string,
+    ) {
         if (state !== cookieState)
             throw new UnauthorizedException("Google state inválido.");
 
@@ -171,6 +192,20 @@ export class AuthService {
             });
         }
 
-        return this.createSession(user.id);
+        return this.createSession(user.id, userAgent, ip);
+    }
+
+    async findSessions(user: AccessTokenPayload) {
+        return this.sessionService.findByUserId(user.sub);
+    }
+
+    async findSessionsBySessionId(sessionId: string, user: AccessTokenPayload) {
+        const session = await this.sessionService.findBySessionId(sessionId);
+
+        if (!session || session.userId !== user.sub) {
+            throw new NotFoundException("Sessão não encontrada.");
+        }
+
+        return session;
     }
 }

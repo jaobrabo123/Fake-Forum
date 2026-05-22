@@ -4,7 +4,7 @@ import {
     Injectable,
     UnauthorizedException,
 } from "@nestjs/common";
-import { UnauthRequest } from "./entities/unauth-request.entity";
+import { CustomUnauthRequest } from "./entities/custom-request.entity";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
 import { AccessTokenPayload } from "./entities/token-payload.entity";
 
@@ -13,7 +13,10 @@ export class AuthGuard implements CanActivate {
     constructor(private readonly jwtService: JwtService) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<UnauthRequest>();
+        const request = context
+            .switchToHttp()
+            .getRequest<CustomUnauthRequest>();
+
         const accessToken =
             this.extractTokenFromHeader(request) ??
             this.extractTokenFromCookies(request);
@@ -37,11 +40,11 @@ export class AuthGuard implements CanActivate {
         return true;
     }
 
-    private extractTokenFromCookies(request: UnauthRequest) {
+    private extractTokenFromCookies(request: CustomUnauthRequest) {
         return request.cookies.accessToken;
     }
 
-    private extractTokenFromHeader(request: UnauthRequest) {
+    private extractTokenFromHeader(request: CustomUnauthRequest) {
         const [type, token] = request.headers.authorization?.split(" ") ?? [];
         return type === "Bearer" ? token : undefined;
     }

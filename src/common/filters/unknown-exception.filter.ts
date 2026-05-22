@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import http from "http";
-import { UnauthRequest } from "../../auth/entities/unauth-request.entity";
+import { CustomUnauthRequest } from "../../auth/entities/custom-request.entity";
 
 @Catch()
 export class UnknownExceptionFilter implements ExceptionFilter {
@@ -15,7 +15,7 @@ export class UnknownExceptionFilter implements ExceptionFilter {
         const ctx = host.switchToHttp();
 
         const response = ctx.getResponse<Response>();
-        const request = ctx.getRequest<UnauthRequest>();
+        const request = ctx.getRequest<CustomUnauthRequest>();
 
         const status =
             exception instanceof HttpException

@@ -1,9 +1,9 @@
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
-import { UnauthRequest } from "../../../auth/entities/unauth-request.entity";
+import { CustomUnauthRequest } from "../../../auth/entities/custom-request.entity";
 
 export const Cookies = createParamDecorator(
-    (data: keyof UnauthRequest["cookies"], ctx: ExecutionContext) => {
-        const request = ctx.switchToHttp().getRequest<UnauthRequest>();
+    (data: keyof CustomUnauthRequest["cookies"], ctx: ExecutionContext) => {
+        const request = ctx.switchToHttp().getRequest<CustomUnauthRequest>();
         return data ? request.cookies[data] : request.cookies;
     },
 );

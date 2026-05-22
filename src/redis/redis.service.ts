@@ -161,4 +161,69 @@ export class RedisService {
     async mset(data: object | Map<string, string | number>) {
         return await this.redis.mset(data);
     }
+
+    /**
+     * Método para buscar várias chaves no Redis de uma vez
+     * @param keys Chaves a serem buscadas
+     * @param toObject Se vai transformar o resultado em Object usando JSON.parse
+     * @returns (T | null)[] Na mesma ordem das chaves
+     */
+    async mget<T>(keys: string[], toObject: true): Promise<(T | null)[]>;
+    /**
+     * Método para buscar várias chaves no Redis de uma vez
+     * @param keys Chaves a serem buscadas
+     * @param toObject Se vai transformar o resultado em Object usando JSON.parse
+     * @returns (string | null)[] Na mesma ordem das chaves
+     */
+    async mget(keys: string[], toObject: false): Promise<(string | null)[]>;
+    async mget(keys: string[], toObject: boolean) {
+        const result = await this.redis.mget(keys);
+
+        if (!toObject) return result;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return result.map((val) => {
+            if (val === null) return val;
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return JSON.parse(val);
+            } catch {
+                return val;
+            }
+        });
+    }
+
+    /**
+     * Método para buscar todos os membros de um Set no Redis
+     * @param key Chave do Redis
+     * @param toObject Se vai transformar o resultado em Object usando JSON.parse
+     * @returns T[]
+     */
+    async smembers<T>(key: string, toObject: true): Promise<T[]>;
+    /**
+     * Método para buscar todos os membros de um Set no Redis
+     * @param key Chave do Redis
+     * @param toObject Se vai transformar o resultado em Object usando JSON.parse
+     * @returns string[]
+     */
+    async smembers(key: string, toObject: false): Promise<string[]>;
+    async smembers(key: string, toObject: boolean) {
+        const result = await this.redis.smembers(key);
+
+        if (!toObject) return result;
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return result.map((val) => {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return JSON.parse(val);
+            } catch {
+                return val;
+            }
+        });
+    }
+
+    multi() {
+        return this.redis.multi();
+    }
 }

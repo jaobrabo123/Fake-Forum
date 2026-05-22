@@ -22,7 +22,7 @@ export function setRefreshTokenCookie(refreshToken: string, res: Response) {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
-        path: "/auth/refresh",
+        path: "/auth",
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 }
@@ -32,7 +32,7 @@ export function clearRefreshTokenCookie(res: Response) {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
-        path: "/auth/refresh",
+        path: "/auth",
     });
 }
 
