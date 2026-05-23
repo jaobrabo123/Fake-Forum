@@ -10,27 +10,32 @@ import { RedisModule } from "./redis/redis.module";
 import { CommentModule } from "./resources/comment/comment.module";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { APP_GUARD } from "@nestjs/core";
-import { ThrottlerStorageRedisService } from "nestjs-throttler-storage-redis";
+import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
+import Redis from "ioredis";
 
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         ThrottlerModule.forRootAsync({
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                throttlers: [
-                    {
-                        name: "general",
-                        ttl: 1 * 60 * 1000,
-                        limit: 100,
-                    },
-                ],
-                storage: new ThrottlerStorageRedisService({
+            useFactory: (configService: ConfigService) => {
+                const redis = new Redis({
                     host: configService.getOrThrow<string>("REDIS_HOST"),
                     port: configService.getOrThrow<number>("REDIS_PORT"),
                     password: configService.get<string>("REDIS_PASSWORD"),
-                }),
-            }),
+                });
+
+                return {
+                    throttlers: [
+                        {
+                            name: "general",
+                            ttl: 1 * 60 * 1000,
+                            limit: 100,
+                        },
+                    ],
+                    storage: new ThrottlerStorageRedisService(redis),
+                };
+            },
         }),
         DatabaseModule,
         UserModule,

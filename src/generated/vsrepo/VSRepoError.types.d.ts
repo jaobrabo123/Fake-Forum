@@ -1,11 +1,19 @@
 /**
+ * ! THIS FILE IS AUTO-GENERATED.
+ * ! DO NOT EDIT MANUALLY.
+ */
+/* eslint-disable */
+/* biome-ignore-all lint: generated file */
+// @ts-nocheck
+
+/**
  * Tipos literais que representam os códigos de erro internos da biblioteca.
  */
-export type VSRepoErrorType =
-    | "VSREPO_CONFIG"
-    | "VSREPO_BUILD"
-    | "VSREPO_EXTEND"
-    | "VSREPO_RUNTIME";
+export type VSRepoErrorType = 
+    | 'VSREPO_CONFIG'
+    | 'VSREPO_BUILD'
+    | 'VSREPO_EXTEND'
+    | 'VSREPO_RUNTIME';
 
 /**
  * Classe base para todos os erros lançados pelo Virtual Schema Repository.
@@ -13,7 +21,7 @@ export type VSRepoErrorType =
 export declare abstract class VSRepoError extends Error {
     /** Código interno usado para identificar a categoria do erro. */
     abstract readonly type: VSRepoErrorType;
-
+    
     constructor(message: string, type: VSRepoErrorType);
 }
 
@@ -22,7 +30,7 @@ export declare abstract class VSRepoError extends Error {
  * configuração é detectada antes ou durante a inicialização do repositório.
  */
 export declare class VSRepoConfigError extends VSRepoError {
-    readonly type: "VSREPO_CONFIG";
+    readonly type: 'VSREPO_CONFIG';
     constructor(message: string);
 }
 
@@ -31,7 +39,7 @@ export declare class VSRepoConfigError extends VSRepoError {
  * repositório não pode ser finalizado por meio de `.build()`.
  */
 export declare class VSRepoBuildError extends VSRepoError {
-    readonly type: "VSREPO_BUILD";
+    readonly type: 'VSREPO_BUILD';
     constructor(message: string);
 }
 
@@ -40,7 +48,7 @@ export declare class VSRepoBuildError extends VSRepoError {
  * por meio de `.extend()`.
  */
 export declare class VSRepoExtendError extends VSRepoError {
-    readonly type: "VSREPO_EXTEND";
+    readonly type: 'VSREPO_EXTEND';
     constructor(message: string);
 }
 
@@ -49,6 +57,6 @@ export declare class VSRepoExtendError extends VSRepoError {
  * quando argumentos inválidos são passados para métodos.
  */
 export declare class VSRepoRuntimeError extends VSRepoError {
-    readonly type: "VSREPO_RUNTIME";
+    readonly type: 'VSREPO_RUNTIME';
     constructor(message: string);
 }
