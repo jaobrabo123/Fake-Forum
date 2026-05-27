@@ -203,9 +203,12 @@ export class AuthService {
         );
 
         if (!user) {
-            user = await this.userRepository.save({
-                email: googlerUserData.email,
-            });
+            user = await this.userRepository.save(
+                {
+                    email: googlerUserData.email,
+                },
+                { selectModel: "tokenVersion" },
+            );
         }
 
         return this.createSession(user.id, userAgent, ip, user.tokenVersion);

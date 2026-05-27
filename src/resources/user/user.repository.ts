@@ -1,7 +1,7 @@
 import { Provider } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-import { /*RepositoryOf,*/ setupVSRepo } from "../../generated/vsrepo";
-import { Prisma } from "../../generated/prisma/client";
+import { /*RepositoryOf,*/ setupVSRepo } from "../../../generated/vsrepo";
+import { Prisma } from "../../../generated/prisma/client";
 
 const userVSRepo = setupVSRepo<
     Prisma.UserGetPayload<{ include: { profile: true } }>,

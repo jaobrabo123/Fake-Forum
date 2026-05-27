@@ -33,6 +33,8 @@ import Redis from "ioredis";
                             limit: 100,
                         },
                     ],
+                    errorMessage:
+                        "Muitas requisições, tente novamente mais tarde.",
                     storage: new ThrottlerStorageRedisService(redis),
                 };
             },

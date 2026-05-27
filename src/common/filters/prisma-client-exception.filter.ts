@@ -2,7 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common";
 import { CustomUnauthRequest } from "../../auth/entities/custom-request.entity";
 import type { Response } from "express";
 import http from "http";
-import { PrismaClientKnownRequestError } from "../../generated/prisma/internal/prismaNamespace";
+import { PrismaClientKnownRequestError } from "../../../generated/prisma/internal/prismaNamespace";
 
 @Catch(PrismaClientKnownRequestError)
 export class PrismaClientExceptionFilter implements ExceptionFilter {

@@ -1,12 +1,12 @@
 import { Provider } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-import { UserProfileGetPayload } from "../../generated/prisma/models";
+import { UserProfileGetPayload } from "../../../generated/prisma/models";
 import {
     RepositoryOf,
     SelectModels,
     setupVSRepo,
     WhereModel,
-} from "../../generated/vsrepo";
+} from "../../../generated/vsrepo";
 
 export const userProfileSelectModels = {
     public: {

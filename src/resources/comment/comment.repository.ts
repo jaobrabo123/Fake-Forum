@@ -1,6 +1,6 @@
 import { Provider } from "@nestjs/common";
-import { Comment } from "../../generated/prisma/client";
-import { RepositoryOf, setupVSRepo } from "../../generated/vsrepo";
+import { Comment } from "../../../generated/prisma/client";
+import { RepositoryOf, setupVSRepo } from "../../../generated/vsrepo";
 import { PrismaService } from "../../database/prisma.service";
 import { postRequiredWhere } from "../post/post.repository";
 

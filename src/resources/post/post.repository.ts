@@ -1,6 +1,6 @@
 import { Provider } from "@nestjs/common";
-import { RepositoryOf, setupVSRepo } from "../../generated/vsrepo";
-import { PostGetPayload } from "../../generated/prisma/models";
+import { RepositoryOf, setupVSRepo } from "../../../generated/vsrepo";
+import { PostGetPayload } from "../../../generated/prisma/models";
 import { PrismaService } from "../../database/prisma.service";
 import {
     userProfileRequiredWhere,
