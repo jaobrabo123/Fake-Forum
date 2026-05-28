@@ -2,6 +2,7 @@ import { applyDecorators } from "@nestjs/common";
 import { IsStrongPassword, ValidateIf } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
 import { ApiProperty } from "@nestjs/swagger";
+import { Trim } from "../transformers/trim.transformer";
 
 export function PasswordField(config?: FieldConfig) {
     const decorators = [
@@ -13,9 +14,11 @@ export function PasswordField(config?: FieldConfig) {
                 minNumbers: 1,
             },
             {
-                message: "Senha fraca.",
+                message:
+                    "Senha fraca, deve conter pelo menos 8 caracteres, 1 letra maiúscula, 1 minúscula e 1 número.",
             },
         ),
+        Trim(),
     ];
 
     if (config) {

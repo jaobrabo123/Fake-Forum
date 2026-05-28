@@ -8,10 +8,12 @@ import {
     ValidateIf,
 } from "class-validator";
 import { FieldConfig } from "./entities/field-config.entity";
+import { Trim } from "../transformers/trim.transformer";
 
 interface StringFieldConfig extends FieldConfig {
     max?: number;
     min?: number;
+    nonTrim?: boolean;
 }
 
 export function StringField(config?: StringFieldConfig) {
@@ -33,6 +35,7 @@ export function StringField(config?: StringFieldConfig) {
                     message: `Campo deve ter no mínimo ${config.min} caracteres.`,
                 }),
             );
+        if (!config.nonTrim) decorators.push(Trim());
         if (config.nullAble)
             decorators.push(ValidateIf((_, value) => value !== null));
         if (config.apiProperty)

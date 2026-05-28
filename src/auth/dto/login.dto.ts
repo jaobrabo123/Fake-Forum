@@ -1,6 +1,6 @@
 import { EmailField } from "../../common/decorators/fields/email.decorator";
 import { StringField } from "../../common/decorators/fields/string.decorator";
-import { ToLowerCase } from "../../common/decorators/transformers/lower-case.transform";
+import { ToLowerCase } from "../../common/decorators/transformers/lower-case.transformer";
 
 export class LoginDTO {
     @EmailField({ apiProperty: true })
