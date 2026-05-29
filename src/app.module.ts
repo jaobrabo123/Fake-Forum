@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { DatabaseModule } from "./database/database.module";
 import { UserModule } from "./resources/user/user.module";
 import { AuthModule } from "./auth/auth.module";
@@ -17,14 +17,9 @@ import Redis from "ioredis";
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         ThrottlerModule.forRootAsync({
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => {
-                const redis = new Redis({
-                    host: configService.getOrThrow<string>("REDIS_HOST"),
-                    port: configService.getOrThrow<number>("REDIS_PORT"),
-                    password: configService.get<string>("REDIS_PASSWORD"),
-                });
-
+            imports: [RedisModule],
+            inject: ["REDIS_CLIENT"],
+            useFactory: (redis: Redis) => {
                 return {
                     throttlers: [
                         {
